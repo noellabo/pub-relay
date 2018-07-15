@@ -22,4 +22,14 @@ describe PubRelay do
       body.should contain("Resource not found")
     end
   end
+
+  it "serves actor" do
+    status_code, body = request("GET", "/actor")
+    status_code.should eq(200)
+
+    pem_json = `openssl pkey -pubout < #{File.join(__DIR__, "test_actor.pem")}`.to_json
+    body.should eq(<<-HERE)
+      {"@context":["https://www.w3.org/ns/activitystreams","https://w3id.org/security/v1"],"id":"https://example.com/actor","type":"Service","preferredUsername":"relay","inbox":"https://example.com/inbox","publicKey":{"id":"https://example.com/actor#main-key","owner":"https://example.com/actor","publicKeyPem":#{pem_json}}}
+      HERE
+  end
 end

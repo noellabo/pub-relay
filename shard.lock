@@ -1,0 +1,6 @@
+version: 1.0
+shards:
+  openssl_ext:
+    github: randomstate/openssl_ext
+    version: 0.1.1
+

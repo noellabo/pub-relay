@@ -10,7 +10,7 @@ def request(method, resource, headers = nil, body = nil)
 
   context = HTTP::Server::Context.new(request, response)
 
-  PubRelay.new("example.com").call(context)
+  PubRelay.new("example.com", File.join(__DIR__, "test_actor.pem")).call(context)
 
   {response.status_code, response_body.to_s, response.headers}
 end

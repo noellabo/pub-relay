@@ -4,6 +4,10 @@ version: 0.1.0
 authors:
   - RX14 <chris@rx14.co.uk>
 
+dependencies:
+  openssl_ext:
+    github: randomstate/openssl_ext
+
 targets:
   pub-relay:
     main: src/entrypoint.cr
