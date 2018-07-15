@@ -7,7 +7,6 @@ class PubRelay
   include HTTP::Handler
 
   def initialize(@host : String)
-    @account_uri = "acct:relay@#{@host}"
   end
 
   def call(context : HTTP::Server::Context)
@@ -24,18 +23,26 @@ class PubRelay
   private def serve_webfinger(ctx)
     resource = ctx.request.query_params["resource"]?
     return error(ctx, 400, "Resource query parameter not present") unless resource
-    return error(ctx, 404, "Resource not found") unless resource == @account_uri
+    return error(ctx, 404, "Resource not found") unless resource == account_uri
 
     {
-      subject: @account_uri,
+      subject: account_uri,
       links:   {
         {
           rel:  "self",
           type: "application/activity+json",
-          href: "https://#{@host}/actor",
+          href: route_url("/actor"),
         },
       },
     }.to_json(ctx.response)
+  end
+
+  def account_uri
+    "acct:relay@#{@host}"
+  end
+
+  def route_url(path)
+    "https://#{@host}#{path}"
   end
 
   private def error(context, status_code, message)
