@@ -1,0 +1,13 @@
+name: pub-relay
+version: 0.1.0
+
+authors:
+  - RX14 <chris@rx14.co.uk>
+
+targets:
+  pub-relay:
+    main: src/entrypoint.cr
+
+crystal: 0.25.1
+
+license: AGPL3
