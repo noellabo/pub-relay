@@ -1,4 +1,6 @@
 require "spec"
+require "webmock"
+
 require "../src/pub_relay"
 
 def request(method, resource, headers = nil, body = nil)

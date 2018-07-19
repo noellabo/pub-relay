@@ -2,6 +2,8 @@ require "http"
 require "json"
 require "openssl_ext"
 
+require "./inbox_handler"
+
 class PubRelay
   VERSION = "0.1.0"
 
@@ -17,8 +19,8 @@ class PubRelay
       serve_webfinger(context)
     when {"GET", "/actor"}
       serve_actor(context)
-      # when {"POST", "/inbox"}
-      #   handle_inbox(context)
+    when {"POST", "/inbox"}
+      handle_inbox(context)
     end
   end
 
@@ -54,6 +56,10 @@ class PubRelay
         publicKeyPem: @private_key.public_key.to_pem,
       },
     }.to_json(ctx.response)
+  end
+
+  private def handle_inbox(context)
+    InboxHandler.new(context).handle
   end
 
   def account_uri

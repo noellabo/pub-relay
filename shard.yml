@@ -8,6 +8,10 @@ dependencies:
   openssl_ext:
     github: randomstate/openssl_ext
 
+development_dependencies:
+  webmock:
+    github: manastech/webmock.cr
+
 targets:
   pub-relay:
     main: src/entrypoint.cr
