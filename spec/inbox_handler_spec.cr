@@ -164,7 +164,7 @@ describe InboxHandler do
         signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
         status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(400)
+        status_code.should eq(401)
         body.should contain(%q(cryptographic signature did not verify for "https://mastodon.sergal.org/users/Sir_Boops#main-key"))
       end
     end
@@ -179,7 +179,7 @@ describe InboxHandler do
         signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
         status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(400)
+        status_code.should eq(401)
         body.should contain(%q(cryptographic signature did not verify for "https://mastodon.sergal.org/users/Sir_Boops#main-key"))
       end
     end
