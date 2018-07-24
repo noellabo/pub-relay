@@ -1,3 +1,5 @@
+require "./activity"
+
 class InboxHandler
   class Error < Exception
   end
@@ -7,8 +9,43 @@ class InboxHandler
 
   def handle
     request_body, actor_from_signature = verify_signature
+
+    # TODO: handle blocks
+
+    begin
+      activity = Activity.from_json(request_body)
+    rescue ex : JSON::Error
+      error(400, "Invalid activity JSON\n#{ex.inspect_with_backtrace}")
+    end
+
+    case activity
+    when .follow?
+      handle_follow(actor_from_signature, activity)
+    when .unfollow?
+      handle_unfollow(actor_from_signature, activity)
+    else
+      handle_forward(actor_from_signature, activity)
+    end
+
+    response.status_code = 202
+    response.puts "OK"
   rescue ignored : InboxHandler::Error
     # error output was already set
+  end
+
+  def handle_follow(actor, activity)
+    unless activity.object_is_public_collection?
+      error(400, "Follow only allowed for #{Activity::PUBLIC_COLLECTION}")
+    end
+
+    # TODO: insert into redis
+  end
+
+  def handle_unfollow(actor, activity)
+    #
+  end
+
+  def handle_forward(actor, activity)
   end
 
   # Verify HTTP signatures according to https://tools.ietf.org/html/draft-cavage-http-signatures-06.
@@ -132,6 +169,27 @@ class InboxHandler
     end
   end
 
+  class Actor
+    include JSON::Serializable
+
+    getter id : String
+    @[JSON::Field(key: "publicKey")]
+    property public_key : Key
+    getter endpoints : Endpoints?
+    getter inbox : String
+
+    def initialize(@id, @public_key, @endpoints, @inbox)
+    end
+
+    def inbox_url
+      endpoints.try(&.shared_inbox) || inbox
+    end
+
+    def domain
+      URI::Punycode.to_ascii(URI.parse(id).host.strip.downcase)
+    end
+  end
+
   struct Key
     include JSON::Serializable
 
@@ -143,14 +201,11 @@ class InboxHandler
     end
   end
 
-  class Actor
+  struct Endpoints
     include JSON::Serializable
 
-    @[JSON::Field(key: "publicKey")]
-    property public_key : Key
-
-    def initialize(@public_key)
-    end
+    @[JSON::Field(key: "sharedInbox")]
+    getter shared_inbox : String
   end
 
   private def error(status_code, message)

@@ -18,6 +18,7 @@ end
 
 private def sir_boops_actor
   InboxHandler::Actor.new(
+    id: "https://mastodon.sergal.org/users/Sir_Boops",
     public_key: InboxHandler::Key.new(
       public_key_pem: <<-KEY,
             -----BEGIN PUBLIC KEY-----
@@ -31,7 +32,9 @@ private def sir_boops_actor
             -----END PUBLIC KEY-----
             KEY
       owner: "https://mastodon.sergal.org/users/Sir_Boops"
-    )
+    ),
+    endpoints: nil,
+    inbox: "https://example.com/inbox"
   )
 end
 
@@ -133,7 +136,7 @@ describe InboxHandler do
         signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
         status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(200)
+        status_code.should eq(202)
       end
     end
   end
@@ -150,7 +153,7 @@ describe InboxHandler do
         signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
         status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(200)
+        status_code.should eq(202)
       end
     end
   end
