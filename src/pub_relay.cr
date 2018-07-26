@@ -1,6 +1,8 @@
 require "http"
 require "json"
 require "openssl_ext"
+require "redis"
+require "sidekiq"
 
 require "./inbox_handler"
 
@@ -9,9 +11,24 @@ class PubRelay
 
   include HTTP::Handler
 
-  def initialize(@host : String, private_key_path : String)
-    @private_key = OpenSSL::RSA.new(File.read(private_key_path))
+  class_getter redis = begin
+    redis_uri = URI.parse(ENV["REDIS_URL"]? || "redis://localhost")
+    redis_host = redis_uri.host.to_s
+    redis_port = redis_uri.port || 6379
+    redis_password = redis_uri.password
+
+    redis_cfg = Sidekiq::RedisConfig.new(redis_host, redis_port, password: redis_password, db: 1)
+    Sidekiq::Client.default_context = Sidekiq::Client::Context.new(redis_cfg)
+
+    Redis::PooledClient.new(redis_host, redis_port, password: redis_password, database: 0)
   end
+
+  class_property(private_key) do
+    private_key_path = ENV["RELAY_PKEY_PATH"]? || File.join(Dir.current, "actor.pem")
+    OpenSSL::RSA.new(File.read(private_key_path))
+  end
+
+  class_property(host) { ENV["RELAY_DOMAIN"] }
 
   def call(context : HTTP::Server::Context)
     case {context.request.method, context.request.path}
@@ -53,7 +70,7 @@ class PubRelay
       publicKey: {
         id:           route_url("/actor#main-key"),
         owner:        route_url("/actor"),
-        publicKeyPem: @private_key.public_key.to_pem,
+        publicKeyPem: PubRelay.private_key.public_key.to_pem,
       },
     }.to_json(ctx.response)
   end
@@ -63,11 +80,15 @@ class PubRelay
   end
 
   def account_uri
-    "acct:relay@#{@host}"
+    "acct:relay@#{PubRelay.host}"
+  end
+
+  def self.route_url(path)
+    "https://#{host}#{path}"
   end
 
   def route_url(path)
-    "https://#{@host}#{path}"
+    PubRelay.route_url(path)
   end
 
   private def error(context, status_code, message)

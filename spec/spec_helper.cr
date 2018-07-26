@@ -3,6 +3,13 @@ require "webmock"
 
 require "../src/pub_relay"
 
+Spec.before_each do
+  PubRelay.redis.flushall
+end
+
+PubRelay.private_key = OpenSSL::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
+PubRelay.host = "example.com"
+
 def request(method, resource, headers = nil, body = nil)
   request = HTTP::Request.new(method, resource, headers, body)
 
@@ -12,7 +19,7 @@ def request(method, resource, headers = nil, body = nil)
 
   context = HTTP::Server::Context.new(request, response)
 
-  PubRelay.new("example.com", File.join(__DIR__, "test_actor.pem")).call(context)
+  PubRelay.new.call(context)
 
   {response.status_code, response_body.to_s, response.headers}
 end

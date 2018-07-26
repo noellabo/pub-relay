@@ -1,4 +1,5 @@
 require "./activity"
+require "./deliver_worker"
 
 class InboxHandler
   class Error < Exception
@@ -23,8 +24,8 @@ class InboxHandler
       handle_follow(actor_from_signature, activity)
     when .unfollow?
       handle_unfollow(actor_from_signature, activity)
-    else
-      handle_forward(actor_from_signature, activity)
+    when .valid_for_rebroadcast?
+      handle_forward(actor_from_signature, request_body)
     end
 
     response.status_code = 202
@@ -38,14 +39,28 @@ class InboxHandler
       error(400, "Follow only allowed for #{Activity::PUBLIC_COLLECTION}")
     end
 
-    # TODO: insert into redis
+    PubRelay.redis.hset("subscription:#{actor.domain}", "inbox_url", actor.inbox_url)
   end
 
   def handle_unfollow(actor, activity)
-    #
+    PubRelay.redis.del("subscription:#{actor.domain}")
   end
 
-  def handle_forward(actor, activity)
+  def handle_forward(actor, request_body)
+    # TODO: cache the subscriptions
+    bulk_args = PubRelay.redis.keys("subscription:*").compact_map do |key|
+      key = key.as(String)
+      domain = key.lchop("subscription:")
+      raise "redis bug" if domain == key
+
+      if domain == actor.domain
+        nil
+      else
+        {domain, request_body}
+      end
+    end
+
+    DeliverWorker.async.perform_bulk(bulk_args)
   end
 
   # Verify HTTP signatures according to https://tools.ietf.org/html/draft-cavage-http-signatures-06.
@@ -186,7 +201,7 @@ class InboxHandler
     end
 
     def domain
-      URI::Punycode.to_ascii(URI.parse(id).host.strip.downcase)
+      URI::Punycode.to_ascii(URI.parse(id).host.not_nil!.strip.downcase)
     end
   end
 

@@ -40,6 +40,16 @@ class Activity
     end
   end
 
+  def addressed_to_public?
+    to.includes?(PUBLIC_COLLECTION) || cc.includes?(PUBLIC_COLLECTION)
+  end
+
+  VALID_TYPES = {"Create", "Update", "Delete", "Announce", "Undo"}
+
+  def valid_for_rebroadcast?
+    signature_present? && addressed_to_public? && types.any? { |type| VALID_TYPES.includes? type }
+  end
+
   class Object
     include JSON::Serializable
 
