@@ -2,7 +2,7 @@ image: alpine:3.8
 
 build:
   script:
-    - apk -U upgrade && apk add -t crystal shards
+    - apk -U upgrade && apk add crystal shards
     - shards build --production
   artifacts:
     paths:
