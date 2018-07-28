@@ -1,0 +1,11 @@
+image: alpine:3.8
+
+build:
+  script:
+    - apk -U upgrade && apk add -t crystal
+    - shards build
+  artifacts:
+    paths:
+      - bin
+  only:
+    - master
