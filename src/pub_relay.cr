@@ -11,22 +11,10 @@ class PubRelay
 
   include HTTP::Handler
 
-  class_getter redis = begin
-    uri = URI.parse(ENV["REDIS_URL"]? || "redis://localhost")
-    host = uri.host.to_s
-    port = uri.port || 6379
-    password = uri.password
-    if (path = uri.path) && path.size > 1
-      db = path[1..-1].to_i
-    else
-      db = 0
-    end
+  # Make sidekiq use REDIS_URL
+  ENV["REDIS_PROVIDER"] = "REDIS_URL"
 
-    cfg = Sidekiq::RedisConfig.new(host, port, password: password, db: db)
-    Sidekiq::Client.default_context = Sidekiq::Client::Context.new(cfg)
-
-    Redis::PooledClient.new(host, port, password: password, database: db)
-  end
+  class_getter redis = Redis::PooledClient.new(url: ENV["REDIS_URL"]?)
 
   class_property(private_key) do
     private_key_path = ENV["RELAY_PKEY_PATH"]? || File.join(Dir.current, "actor.pem")
