@@ -51,6 +51,7 @@ class PubRelay
     return error(ctx, 400, "Resource query parameter not present") unless resource
     return error(ctx, 404, "Resource not found") unless resource == account_uri
 
+    ctx.response.content_type = "application/json"
     {
       subject: account_uri,
       links:   {
@@ -64,6 +65,7 @@ class PubRelay
   end
 
   private def serve_actor(ctx)
+    ctx.response.content_type = "application/activity+json"
     {
       "@context": {"https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"},
 
