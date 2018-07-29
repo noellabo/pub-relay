@@ -3,8 +3,9 @@ require "./spec_helper"
 describe PubRelay do
   describe "webfinger" do
     it "works" do
-      status_code, body = request("GET", "/.well-known/webfinger?resource=acct%3Arelay%40example.com")
+      status_code, body, headers = request("GET", "/.well-known/webfinger?resource=acct%3Arelay%40example.com")
       status_code.should eq(200)
+      headers["Content-Type"].should eq("application/json")
       body.should eq(<<-HERE)
       {"subject":"acct:relay@example.com","links":[{"rel":"self","type":"application/activity+json","href":"https://example.com/actor"}]}
       HERE
@@ -21,11 +22,18 @@ describe PubRelay do
       status_code.should eq(404)
       body.should contain("Resource not found")
     end
+
+    it "handles not found resource parameter (wrong domain)" do
+      status_code, body = request("GET", "/.well-known/webfinger?resource=relay@notexample.com")
+      status_code.should eq(404)
+      body.should contain("Resource not found")
+    end
   end
 
   it "serves actor" do
-    status_code, body = request("GET", "/actor")
+    status_code, body, headers = request("GET", "/actor")
     status_code.should eq(200)
+    headers["Content-Type"].should eq("application/activity+json")
 
     pem_json = `openssl pkey -pubout < #{File.join(__DIR__, "test_actor.pem")}`.to_json
     body.should eq(<<-HERE)
