@@ -1,11 +1,15 @@
 image: alpine:3.8
 
 before_script:
-  - apk -U upgrade && apk add openssl-dev musl-dev crystal shards
+  - apk -U upgrade && apk add openssl-dev musl-dev crystal shards llvm5-dev llvm5-static
 
 build:
   script:
-    - shards build --production --static
+    - shards install --production
+    - echo 'require "llvm/lib_llvm"; require "llvm/enums"; require "./src/server"' > hack_server.cr
+    - echo 'require "llvm/lib_llvm"; require "llvm/enums"; require "./src/worker"' > hack_worker.cr
+    - crystal build hack_server.cr --static -o bin/server
+    - crystal build hack_worker.cr --static -o bin/worker
   artifacts:
     paths:
       - bin
