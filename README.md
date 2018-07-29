@@ -1,27 +1,39 @@
-# pub-relay
+pub-relay
+=========
 
-TODO: Write a description here
+...is a service-type ActivityPub actor that will re-broadcast anything sent to it to anyone who subscribes to it.
+
+![](https://i.imgur.com/5q8db54.jpg)
+
+Endpoints:
+
+- `GET /actor`
+- `POST /inbox`
+- `GET /.well-known/webfinger`
+
+Operations:
+
+- Send a Follow activity to the inbox to subscribe
+  (Object: `https://www.w3.org/ns/activitystreams#Public`)
+- Send an Undo of Follow activity to the inbox to unsubscribe
+  (Object of object: `https://www.w3.org/ns/activitystreams#Public`)
+- Send anything else to the inbox to broadcast it
+  (Supported types: `Create`, `Update`, `Delete`, `Announce`, `Undo`)
+
+Requirements:
+
+- All requests must be HTTP-signed with a valid actor
+- Only payloads that contain a linked-data signature will be re-broadcast
+- Only payloads addressed to `https://www.w3.org/ns/activitystreams#Public` will be re-broadcast
 
 ## Installation
 
-TODO: Write installation instructions here
+Download the binaries.
 
 ## Usage
 
-TODO: Write usage instructions here
-
-## Development
-
-TODO: Write development instructions here
-
-## Contributing
-
-1. Fork it (<https://github.com/your-github-user/pub-relay/fork>)
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Commit your changes (`git commit -am 'Add some feature'`)
-4. Push to the branch (`git push origin my-new-feature`)
-5. Create a new Pull Request
+TODO
 
 ## Contributors
 
-- [your-github-user](https://github.com/your-github-user) RX14 - creator, maintainer
+- [RX14](https://source.joinmastodon.org/RX14) creator, maintainer
