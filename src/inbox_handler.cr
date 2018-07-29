@@ -103,6 +103,8 @@ class InboxHandler
       {body, actor}
     else
       error(401, "Invalid Signature: cryptographic signature did not verify for #{key_id.inspect}")
+      puts "SIGNATURE FAILED!"
+      pp! signed_string, request.headers, actor
     end
   end
 
