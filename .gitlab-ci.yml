@@ -5,7 +5,7 @@ before_script:
 
 build:
   script:
-    - shards build --production
+    - shards build --production --static
   artifacts:
     paths:
       - bin
