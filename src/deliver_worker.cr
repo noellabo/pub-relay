@@ -28,7 +28,11 @@ class DeliverWorker
 
     headers["Signature"] = %(keyId="#{PubRelay.route_url("/actor")}",headers="#{signed_headers}",signature="#{Base64.strict_encode(signature)}")
 
-    response = HTTP::Client.post(inbox_url, headers: headers, body: request_body)
+    client = HTTP::Client.new(inbox_url)
+    client.dns_timeout = 10.seconds
+    client.connect_timeout = 10.seconds
+    client.read_timeout = 10.seconds
+    response = client.post(inbox_url.full_path, headers: headers, body: request_body)
     puts "POST #{inbox_url} #{response.status_code}"
   end
 end
