@@ -1,7 +1,7 @@
 image: alpine:3.8
 
 before_script:
-  - apk -U upgrade && apk add openssl-dev crystal shards
+  - apk -U upgrade && apk add openssl-dev musl-dev crystal shards
 
 build:
   script:
