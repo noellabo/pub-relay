@@ -102,9 +102,9 @@ class InboxHandler
     if public_key.verify(OpenSSL::Digest.new("SHA256"), signature, signed_string)
       {body, actor}
     else
-      error(401, "Invalid Signature: cryptographic signature did not verify for #{key_id.inspect}")
       puts "SIGNATURE FAILED!"
       pp! signed_string, request.headers, actor
+      error(401, "Invalid Signature: cryptographic signature did not verify for #{key_id.inspect}")
     end
   end
 
