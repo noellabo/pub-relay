@@ -8,6 +8,7 @@ build:
     - shards install --production
     - echo 'require "llvm/lib_llvm"; require "llvm/enums"; require "./src/server"' > hack_server.cr
     - echo 'require "llvm/lib_llvm"; require "llvm/enums"; require "./src/worker"' > hack_worker.cr
+    - mkdir -p bin
     - crystal build hack_server.cr --static -o bin/server
     - crystal build hack_worker.cr --static -o bin/worker
   artifacts:
