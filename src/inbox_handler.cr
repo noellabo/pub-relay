@@ -1,6 +1,14 @@
 require "./activity"
 require "./deliver_worker"
 
+# Monkeypatch in fix for OpenSSL::Digest on multibyte strings
+class OpenSSL::Digest
+  def update(data : String | Slice)
+    LibCrypto.evp_digestupdate(self, data, data.bytesize)
+    self
+  end
+end
+
 class InboxHandler
   class Error < Exception
   end
@@ -102,8 +110,6 @@ class InboxHandler
     if public_key.verify(OpenSSL::Digest.new("SHA256"), signature, signed_string)
       {body, actor}
     else
-      puts "SIGNATURE FAILED!"
-      pp! signed_string, request.headers, body
       error(401, "Invalid Signature: cryptographic signature did not verify for #{key_id.inspect}")
     end
   end
