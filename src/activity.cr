@@ -12,10 +12,10 @@ class Activity
   getter? signature_present = false
 
   @[JSON::Field(converter: FuzzyStringArrayConverter)]
-  getter to : Array(String)
+  getter to : [] of String
 
   @[JSON::Field(converter: FuzzyStringArrayConverter)]
-  getter cc : Array(String)
+  getter cc = [] of String
 
   def follow?
     types.includes? "Follow"
