@@ -12,7 +12,7 @@ class Activity
   getter? signature_present = false
 
   @[JSON::Field(converter: FuzzyStringArrayConverter)]
-  getter to : [] of String
+  getter to = [] of String
 
   @[JSON::Field(converter: FuzzyStringArrayConverter)]
   getter cc = [] of String
