@@ -43,6 +43,9 @@ class InboxHandler
   end
 
   def handle_follow(actor, activity)
+    puts "FOLLOW:"
+    pp actor, activity
+
     unless activity.object_is_public_collection?
       error(400, "Follow only allowed for #{Activity::PUBLIC_COLLECTION}")
     end
@@ -51,6 +54,9 @@ class InboxHandler
   end
 
   def handle_unfollow(actor, activity)
+    puts "UNFOLLOW:"
+    pp actor, activity
+
     PubRelay.redis.del("subscription:#{actor.domain}")
   end
 
