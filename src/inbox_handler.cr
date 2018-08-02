@@ -234,7 +234,7 @@ class InboxHandler
     include JSON::Serializable
 
     @[JSON::Field(key: "sharedInbox")]
-    getter shared_inbox : String
+    getter shared_inbox : String?
   end
 
   private def error(status_code, message)

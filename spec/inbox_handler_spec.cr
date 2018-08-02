@@ -86,6 +86,13 @@ describe InboxHandler do
     end
   end
 
+  it "succeeds with empty endpoints object" do
+    File.open("spec/data/actor_empty_endpoints.json") do |file|
+      actor = Union(InboxHandler::Actor, InboxHandler::Key).from_json(file).as(InboxHandler::Actor)
+      actor.inbox_url.should eq("https://microblog.pub/inbox")
+    end
+  end
+
   it "fails with no request body" do
     WebMock.wrap do
       WebMock.stub("GET", "https://example.com/key")
