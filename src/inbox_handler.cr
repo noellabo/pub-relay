@@ -50,7 +50,23 @@ class InboxHandler
       error(400, "Follow only allowed for #{Activity::PUBLIC_COLLECTION}")
     end
 
+    accept_activity = {
+      "@context": {"https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"},
+
+      id:     PubRelay.route_url("/actor#accepts/follows/#{actor.domain}"),
+      type:   "Accept",
+      actor:  PubRelay.route_url("/actor"),
+      object: {
+        id:     activity.id,
+        type:   "Follow",
+        actor:  actor.id,
+        object: PubRelay.route_url("/actor"),
+      },
+    }
+
     PubRelay.redis.hset("subscription:#{actor.domain}", "inbox_url", actor.inbox_url)
+
+    DeliverWorker.async.perform(actor.domain, accept_activity.to_json)
   end
 
   def handle_unfollow(actor, activity)

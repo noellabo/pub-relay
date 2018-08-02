@@ -3,10 +3,11 @@ require "./converters"
 class Activity
   include JSON::Serializable
 
+  getter id : String?
+  getter object : String | Object
+
   @[JSON::Field(key: "type", converter: FuzzyStringArrayConverter)]
   getter types : Array(String)
-
-  getter object : String | Object
 
   @[JSON::Field(key: "signature", converter: PresenceConverter)]
   getter? signature_present = false
