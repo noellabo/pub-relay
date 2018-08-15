@@ -1,6 +1,10 @@
 class DeliverWorker
   include Sidekiq::Worker
 
+  sidekiq_options do |job|
+    job.retry = false
+  end
+
   def perform(domain : String, request_body : String)
     inbox_url = PubRelay.redis.hget("subscription:#{domain}", "inbox_url")
     return unless inbox_url
