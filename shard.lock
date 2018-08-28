@@ -4,17 +4,21 @@ shards:
     github: schovi/baked_file_system
     commit: e1447549d5ac0560720fae62179b2f2c62c9bfd1
 
+  dotenv:
+    github: gdotdesign/cr-dotenv
+    version: 0.1.0
+
   exception_page:
     github: crystal-loot/exception_page
     version: 0.1.1
 
   kemal:
     github: kemalcr/kemal
-    commit: 09bb1fcd4073a374b3a61c99e48e05a866b23c08
+    commit: 9448360eac4273919c2bb6d2517a7234844aec2f
 
   kemal-csrf:
     github: kemalcr/kemal-csrf
-    version: 0.4.0
+    version: 0.5.0
 
   kemal-session:
     github: kemalcr/kemal-session
@@ -42,9 +46,9 @@ shards:
 
   sidekiq:
     github: mperham/sidekiq.cr
-    commit: f3820aace32aa8d3b1cfe835536ee5ff981840fa
+    commit: 002d984edc24d901771a60139e7da6dcfe109736
 
   webmock:
     github: manastech/webmock.cr
-    version: 0.9.3
+    version: 0.10.0
 

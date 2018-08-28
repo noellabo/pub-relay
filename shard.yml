@@ -14,11 +14,13 @@ dependencies:
   sidekiq:
     github: mperham/sidekiq.cr
     branch: master
+  dotenv:
+    github: gdotdesign/cr-dotenv
 
 development_dependencies:
   webmock:
     github: manastech/webmock.cr
-    version: '>= 0.9.3'
+    version: '>= 0.10.0'
 
 targets:
   server:
@@ -26,6 +28,6 @@ targets:
   worker:
     main: src/worker.cr
 
-crystal: 0.25.1
+crystal: 0.26.0
 
 license: AGPL3
