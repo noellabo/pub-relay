@@ -8,7 +8,7 @@ class DeliverWorker
   def perform(domain : String, request_body : String)
     inbox_url = PubRelay.redis.hget("subscription:#{domain}", "inbox_url")
     return unless inbox_url
-    inbox_url = URI.parse(inbox_url)
+    inbox_url = URI.parse(inbox_url.downcase)
 
     body_hash = OpenSSL::Digest.new("sha256")
     body_hash.update(request_body)
