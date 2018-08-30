@@ -248,7 +248,7 @@ class InboxHandler
   end
 
   private def error(status_code, message)
-    puts "ERROR: #{message} #{status_code}"
+    PubRelay.logger.info "Returned error to client: #{message} #{status_code}"
 
     response.status_code = status_code
     response.puts message
