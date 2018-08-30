@@ -33,6 +33,8 @@ class PubRelay
       serve_actor(context)
     when {"POST", "/inbox"}
       handle_inbox(context)
+    else
+      call_next(context)
     end
   end
 
