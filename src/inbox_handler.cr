@@ -72,13 +72,19 @@ class InboxHandler
 
   def handle_forward(actor, request_body)
     # TODO: cache the subscriptions
-    bulk_args = PubRelay.redis.keys("subscription:*").each do |key|
+    bulk_args = PubRelay.redis.keys("subscription:*").compact_map do |key|
       key = key.as(String)
       domain = key.lchop("subscription:")
       raise "redis bug" if domain == key
 
-      DeliverWorker.async.perform(domain, request_body) unless domain == actor.domain
+      if domain == actor.domain
+        nil
+      else
+        {domain, request_body}
+      end
     end
+
+    DeliverWorker.async.perform_bulk(bulk_args)
   end
 
   # Verify HTTP signatures according to https://tools.ietf.org/html/draft-cavage-http-signatures-06.
