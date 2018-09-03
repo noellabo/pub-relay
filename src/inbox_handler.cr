@@ -1,14 +1,6 @@
 require "./activity"
 require "./deliver_worker"
 
-# Monkeypatch in fix for OpenSSL::Digest on multibyte strings
-class OpenSSL::Digest
-  def update(data : String | Slice)
-    LibCrypto.evp_digestupdate(self, data, data.bytesize)
-    self
-  end
-end
-
 class InboxHandler
   class Error < Exception
   end
