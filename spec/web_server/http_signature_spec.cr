@@ -48,7 +48,7 @@ describe PubRelay::WebServer::HTTPSignature do
   end
 
   expect_signature_fails("", "did not contain '='")
-  expect_signature_fails("foo=bar, foo2", %q(param "foo2" did not contain '='))
+  expect_signature_fails("foo=bar, foo2", %q(param did not contain '=': "foo2"))
   expect_signature_fails(%q(foo="), %q(malformed quoted-string))
   expect_signature_fails(%q(foo="bar), %q(malformed quoted-string))
   expect_signature_fails(%q(foo="bar\"), %q(malformed quoted-string))
@@ -207,7 +207,7 @@ describe PubRelay::WebServer::HTTPSignature do
         status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
         status_code.should eq(400)
-        body.should contain(%q(Header "user-agent" was supposed to be signed but was missing from the request))
+        body.should contain(%q(Header was supposed to be signed but was missing from the request: "user-agent"))
       end
     end
   end

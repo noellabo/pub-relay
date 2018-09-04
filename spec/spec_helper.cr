@@ -22,7 +22,8 @@ def request(method, resource, headers = nil, body = nil)
     private_key: private_key,
     redis: Redis::PooledClient.new(url: ENV["REDIS_URL"]? || "redis://localhost"),
     bindhost: "localhost",
-    port: 0
+    port: 0,
+    stats: PubRelay::Stats.new
   ).call(context)
 
   {response.status_code, response_body.to_s, response.headers}

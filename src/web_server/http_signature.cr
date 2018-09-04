@@ -11,6 +11,8 @@ struct PubRelay::WebServer::HTTPSignature
     key_id = signature_params["keyId"]?
     error(400, "Invalid Signature: keyId not present") unless key_id
 
+    @context.relay_request_domain = (URI.parse(key_id).hostname rescue nil) || key_id
+
     signature = signature_params["signature"]?
     error(400, "Invalid Signature: signature not present") unless signature
 
@@ -38,7 +40,7 @@ struct PubRelay::WebServer::HTTPSignature
     if public_key.verify(OpenSSL::Digest.new("SHA256"), signature, signed_string)
       {body, actor}
     else
-      error(401, "Invalid Signature: cryptographic signature did not verify for #{key_id.inspect}")
+      error(401, "Invalid Signature: cryptographic signature did not verify", "for #{key_id.inspect}")
     end
   end
 
@@ -50,7 +52,7 @@ struct PubRelay::WebServer::HTTPSignature
     signature_header.split(',') do |param|
       parts = param.split('=', 2)
       unless parts.size == 2
-        error(400, "Invalid Signature: param #{param.strip.inspect} did not contain '='")
+        error(400, "Invalid Signature: param did not contain '=':", param.strip.inspect)
       end
 
       # This is an 'auth-param' defined in https://tools.ietf.org/html/rfc7235#section-2.1
@@ -59,12 +61,12 @@ struct PubRelay::WebServer::HTTPSignature
 
       if value.starts_with? '"'
         unless value.ends_with?('"') && value.size > 2
-          error(400, "Invalid Signature: malformed quoted-string in param #{param.strip.inspect}")
+          error(400, "Invalid Signature: malformed quoted-string in param", param.strip.inspect)
         end
 
         value = HTTP.dequote_string(value[1..-2]) rescue nil
         unless value
-          error(400, "Invalid Signature: malformed quoted-string in param #{param.strip.inspect}")
+          error(400, "Invalid Signature: malformed quoted-string in param", param.strip.inspect)
         end
       end
 
@@ -87,7 +89,7 @@ struct PubRelay::WebServer::HTTPSignature
       raise "BUG: cached_fetch_json returned neither Actor nor Key"
     end
   rescue ex : JSON::Error
-    error(400, "Invalid JSON from fetching #{key_id.inspect}: #{ex.inspect_with_backtrace}")
+    error(400, "Invalid JSON from fetching", "#{key_id.inspect}: #{ex.inspect_with_backtrace}")
   end
 
   private def cached_fetch_json(url, json_class : JsonType.class) : JsonType forall JsonType
@@ -96,7 +98,7 @@ struct PubRelay::WebServer::HTTPSignature
     # TODO use HTTP::Client.new and set read timeout
     response = HTTP::Client.get(url, headers: headers)
     unless response.status_code == 200
-      error(400, "Got non-200 response from fetching #{url.inspect}")
+      error(400, "Got non-200 response from fetching", url.inspect)
     end
     JsonType.from_json(response.body)
   end
@@ -115,7 +117,7 @@ struct PubRelay::WebServer::HTTPSignature
       else
         request_header = request.headers[header_name]?
         unless request_header
-          error(400, "Header #{header_name.inspect} was supposed to be signed but was missing from the request")
+          error(400, "Header was supposed to be signed but was missing from the request:", header_name.inspect)
         end
         "#{header_name}: #{request_header}"
       end
@@ -126,8 +128,8 @@ struct PubRelay::WebServer::HTTPSignature
     @context.request
   end
 
-  private def error(status_code, message)
-    raise WebServer::ClientError.new(status_code, message)
+  private def error(status_code, error_code, user_message = "")
+    raise WebServer::ClientError.new(status_code, error_code, user_message)
   end
 
   class Actor

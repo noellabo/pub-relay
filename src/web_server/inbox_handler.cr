@@ -18,7 +18,7 @@ class PubRelay::WebServer::InboxHandler
     begin
       activity = Activity.from_json(request_body)
     rescue ex : JSON::Error
-      error(400, "Invalid activity JSON\n#{ex.inspect_with_backtrace}")
+      error(400, "Invalid activity JSON:", "\n#{ex.inspect_with_backtrace}")
     end
 
     case activity
@@ -79,8 +79,8 @@ class PubRelay::WebServer::InboxHandler
     # DeliverWorker.async.perform_bulk(bulk_args)
   end
 
-  private def error(status_code, message)
-    raise WebServer::ClientError.new(status_code, message)
+  private def error(status_code, error_code, user_message = "")
+    raise WebServer::ClientError.new(status_code, error_code, user_message)
   end
 
   private def route_url(path)

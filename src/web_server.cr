@@ -1,3 +1,7 @@
+class HTTP::Server::Context
+  property relay_request_domain : String?
+end
+
 class PubRelay::WebServer
   include HTTP::Handler
   include Earl::Agent
@@ -5,9 +9,10 @@ class PubRelay::WebServer
 
   class ClientError < Exception
     getter status_code : Int32
+    getter error_code : String
 
-    def initialize(@status_code, message)
-      super(message)
+    def initialize(@status_code, @error_code, user_portion)
+      super("#{@error_code} #{user_portion}")
     end
   end
 
@@ -16,7 +21,8 @@ class PubRelay::WebServer
     @private_key : OpenSSL::RSA,
     @redis : Redis::PooledClient,
     @bindhost : String,
-    @port : Int32
+    @port : Int32,
+    @stats : Stats
   )
   end
 
@@ -48,6 +54,8 @@ class PubRelay::WebServer
         serve_webfinger(context)
       when {"GET", "/actor"}
         serve_actor(context)
+      when {"GET", "/stats"}
+        serve_stats(context)
       when {"POST", "/inbox"}
         handle_inbox(context)
       else
@@ -73,11 +81,14 @@ class PubRelay::WebServer
     case exception
     when ClientError
       log.warn "#{log_message} #{exception.message}"
+      @stats.send Stats::HTTPResponsePayload.new(exception.error_code, context.relay_request_domain)
     when Exception
       log.error log_message
       log.error exception
+      @stats.send Stats::HTTPResponsePayload.new("500", context.relay_request_domain)
     else
       log.debug log_message
+      @stats.send Stats::HTTPResponsePayload.new(context.response.status_code.to_s, context.relay_request_domain)
     end
   end
 
@@ -119,6 +130,11 @@ class PubRelay::WebServer
     }.to_json(ctx.response)
   end
 
+  private def serve_stats(ctx)
+    ctx.response.content_type = "application/json"
+    @stats.to_json(ctx.response)
+  end
+
   private def handle_inbox(context)
     InboxHandler.new(context, @domain, @redis).handle
   end
@@ -127,8 +143,8 @@ class PubRelay::WebServer
     "https://#{@domain}#{path}"
   end
 
-  private def error(status_code, message)
-    raise WebServer::ClientError.new(status_code, message)
+  private def error(status_code, error_code, user_message = "")
+    raise WebServer::ClientError.new(status_code, error_code, user_message)
   end
 end
 
