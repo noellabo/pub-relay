@@ -1,4 +1,4 @@
-require "./spec_helper"
+require "../spec_helper"
 
 private def post_inbox(headers, body = nil)
   request("POST", "/inbox", headers, body)
@@ -16,10 +16,12 @@ private def expect_signature_fails(signature_header, expected_body)
   end
 end
 
+private alias HTTPSignature = PubRelay::WebServer::HTTPSignature
+
 private def sir_boops_actor
-  InboxHandler::Actor.new(
+  HTTPSignature::Actor.new(
     id: "https://mastodon.sergal.org/users/Sir_Boops",
-    public_key: InboxHandler::Key.new(
+    public_key: HTTPSignature::Key.new(
       public_key_pem: <<-KEY,
             -----BEGIN PUBLIC KEY-----
             MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvwDujxmxoYHs64MyVB3L
@@ -38,7 +40,7 @@ private def sir_boops_actor
   )
 end
 
-describe InboxHandler do
+describe PubRelay::WebServer::HTTPSignature do
   it "fails unsigned requests" do
     status_code, body = post_inbox(HTTP::Headers{"Signatur" => "typo"})
     status_code.should eq(401)
@@ -88,7 +90,7 @@ describe InboxHandler do
 
   it "succeeds with empty endpoints object" do
     File.open("spec/data/actor_empty_endpoints.json") do |file|
-      actor = Union(InboxHandler::Actor, InboxHandler::Key).from_json(file).as(InboxHandler::Actor)
+      actor = Union(HTTPSignature::Actor, HTTPSignature::Key).from_json(file).as(HTTPSignature::Actor)
       actor.inbox_url.should eq("https://microblog.pub/inbox")
     end
   end

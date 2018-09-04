@@ -5,17 +5,18 @@ authors:
   - RX14 <chris@rx14.co.uk>
 
 dependencies:
+  earl:
+    github: ysbaddaden/earl
+    branch: master
   openssl_ext:
     github: randomstate/openssl_ext
-    version: '>= 0.1.1'
+    version: '~> 0.1.1'
   redis:
     github: stefanwille/crystal-redis
-    version: '>= 2.0.0'
-  sidekiq:
-    github: mperham/sidekiq.cr
-    branch: master
+    version: '~> 2.0.0'
   dotenv:
     github: gdotdesign/cr-dotenv
+    version: '~> 0.1.0'
 
 development_dependencies:
   webmock:
@@ -23,10 +24,8 @@ development_dependencies:
     version: '>= 0.10.0'
 
 targets:
-  server:
-    main: src/server.cr
-  worker:
-    main: src/worker.cr
+  pub-relay:
+    main: src/entrypoint.cr
 
 crystal: 0.26.0
 

@@ -1,4 +1,4 @@
-class DeliverWorker
+class PubRelay::DeliverWorker
   include Sidekiq::Worker
 
   sidekiq_options do |job|

@@ -1,32 +1,12 @@
 version: 1.0
 shards:
-  baked_file_system:
-    github: schovi/baked_file_system
-    commit: e1447549d5ac0560720fae62179b2f2c62c9bfd1
-
   dotenv:
     github: gdotdesign/cr-dotenv
     version: 0.1.0
 
-  exception_page:
-    github: crystal-loot/exception_page
-    version: 0.1.1
-
-  kemal:
-    github: kemalcr/kemal
-    commit: 9448360eac4273919c2bb6d2517a7234844aec2f
-
-  kemal-csrf:
-    github: kemalcr/kemal-csrf
-    version: 0.5.0
-
-  kemal-session:
-    github: kemalcr/kemal-session
-    commit: bc720cca9c27e391b4b3fc32ae7cc23f4d3f3fdc
-
-  kilt:
-    github: jeromegn/kilt
-    version: 0.4.0
+  earl:
+    github: ysbaddaden/earl
+    commit: e809dff93f66793498c6140feef1b3e51b6f9ee4
 
   openssl_ext:
     github: randomstate/openssl_ext
@@ -36,17 +16,9 @@ shards:
     github: ysbaddaden/pool
     version: 0.2.3
 
-  radix:
-    github: luislavena/radix
-    version: 0.3.8
-
   redis:
     github: stefanwille/crystal-redis
     version: 2.0.0
-
-  sidekiq:
-    github: mperham/sidekiq.cr
-    commit: 002d984edc24d901771a60139e7da6dcfe109736
 
   webmock:
     github: manastech/webmock.cr
