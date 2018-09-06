@@ -30,6 +30,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
   def call(delivery : Delivery)
     if delivery.domain == @domain
       @stats.send Stats::DeliveryPayload.new(@domain, "SELF DOMAIN", delivery.counter)
+      return
     end
 
     body_hash = OpenSSL::Digest.new("sha256")
