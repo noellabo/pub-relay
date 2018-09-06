@@ -19,10 +19,14 @@ class PubRelay < Earl::Supervisor
     stats = Stats.new
     monitor(stats)
 
-    web_server = WebServer.new(domain, private_key, redis, bindhost, port, stats)
+    subscription_manager = SubscriptionManager.new(domain, private_key, redis, stats)
+    monitor(subscription_manager)
+
+    web_server = WebServer.new(domain, private_key, subscription_manager, bindhost, port, stats)
     monitor(web_server)
   end
 end
 
 require "./stats"
+require "./subscription_manager"
 require "./web_server"

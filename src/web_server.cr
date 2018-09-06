@@ -19,7 +19,7 @@ class PubRelay::WebServer
   def initialize(
     @domain : String,
     @private_key : OpenSSL::RSA,
-    @redis : Redis::PooledClient,
+    @subscription_manager : SubscriptionManager,
     @bindhost : String,
     @port : Int32,
     @stats : Stats
@@ -136,7 +136,7 @@ class PubRelay::WebServer
   end
 
   private def handle_inbox(context)
-    InboxHandler.new(context, @domain, @redis).handle
+    InboxHandler.new(context, @domain, @subscription_manager).handle
   end
 
   private def route_url(path)

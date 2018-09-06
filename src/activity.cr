@@ -1,7 +1,7 @@
 class PubRelay::Activity
   include JSON::Serializable
 
-  getter id : String?
+  getter id : String
   getter object : String | Object
 
   @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
@@ -52,7 +52,7 @@ class PubRelay::Activity
   class Object
     include JSON::Serializable
 
-    getter id : String?
+    getter id : String
 
     @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
     getter types : Array(String)

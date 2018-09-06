@@ -5,7 +5,7 @@ class PubRelay::WebServer::InboxHandler
   def initialize(
     @context : HTTP::Server::Context,
     @domain : String,
-    @redis : Redis::PooledClient
+    @subscription_manager : SubscriptionManager
   )
   end
 
@@ -39,44 +39,27 @@ class PubRelay::WebServer::InboxHandler
       error(400, "Follow only allowed for #{Activity::PUBLIC_COLLECTION}")
     end
 
-    accept_activity = {
-      "@context": {"https://www.w3.org/ns/activitystreams"},
+    inbox_url = URI.parse(actor.inbox_url) rescue nil
+    error(400, "Inbox URL was not a valid URL") unless inbox_url
 
-      id:     route_url("/actor#accepts/follows/#{actor.domain}"),
-      type:   "Accept",
-      actor:  route_url("/actor"),
-      object: {
-        id:     activity.id,
-        type:   "Follow",
-        actor:  actor.id,
-        object: route_url("/actor"),
-      },
-    }
-
-    @redis.hset("subscription:#{actor.domain}", "inbox_url", actor.inbox_url)
-
-    # DeliverWorker.async.perform(actor.domain, accept_activity.to_json)
+    @subscription_manager.send(
+      SubscriptionManager::Subscription.new(
+        domain: actor.domain,
+        inbox_url: inbox_url,
+        follow_id: activity.id,
+        follow_actor_id: actor.id
+      )
+    )
   end
 
   def handle_unfollow(actor, activity)
-    @redis.del("subscription:#{actor.domain}")
+    @subscription_manager.send(
+      SubscriptionManager::Unsubscription.new(actor.domain)
+    )
   end
 
   def handle_forward(actor, request_body)
-    # TODO: cache the subscriptions
-    bulk_args = @redis.keys("subscription:*").compact_map do |key|
-      key = key.as(String)
-      domain = key.lchop("subscription:")
-      raise "redis bug" if domain == key
-
-      if domain == actor.domain
-        nil
-      else
-        {domain, request_body}
-      end
-    end
-
-    # DeliverWorker.async.perform_bulk(bulk_args)
+    @subscription_manager.deliver(request_body, source_domain: actor.domain)
   end
 
   private def error(status_code, error_code, user_message = "")
