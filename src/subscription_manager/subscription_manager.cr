@@ -74,6 +74,8 @@ class PubRelay::SubscriptionManager
   end
 
   def call(subscription : Subscription)
+    log.info "Received subscription for #{subscription.domain}"
+
     deliver_worker = DeliverWorker.new(
       subscription.domain, subscription.inbox_url, @relay_domain, @private_key, @stats, self
     )
@@ -155,7 +157,10 @@ class PubRelay::SubscriptionManager
 
   private def transition_state(domain, new_state : State)
     state = get_state(domain)
+
     raise "Invalid transition for #{domain} (#{state} -> #{new_state})" unless state.transition? new_state
+    log.info "Transitioning #{domain} (#{state} -> #{new_state})"
+
     @redis.hset(key_for(domain), "state", new_state.to_s)
   end
 
