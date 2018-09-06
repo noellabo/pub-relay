@@ -102,7 +102,9 @@ class PubRelay::SubscriptionManager
     }
 
     counter = new_counter
-    delivery = DeliverWorker::Delivery.new(accept_activity.to_json, counter, accept: true)
+    delivery = DeliverWorker::Delivery.new(
+      accept_activity.to_json, @relay_domain, counter, accept: true
+    )
     deliver_worker.send delivery
   end
 
@@ -131,15 +133,9 @@ class PubRelay::SubscriptionManager
 
   def deliver(message : String, source_domain : String)
     counter = new_counter
-    delivery = DeliverWorker::Delivery.new(message, counter, accept: false)
+    delivery = DeliverWorker::Delivery.new(message, source_domain, counter, accept: false)
 
-    select_actions = @subscribed_workers.compact_map do |worker|
-      if worker.domain == source_domain
-        nil
-      else
-        worker.mailbox.send_select_action(delivery)
-      end
-    end
+    select_actions = @subscribed_workers.map(&.mailbox.send_select_action(delivery))
 
     spawn do
       until select_actions.empty?
