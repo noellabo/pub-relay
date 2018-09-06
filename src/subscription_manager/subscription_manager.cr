@@ -123,8 +123,8 @@ class PubRelay::SubscriptionManager
 
     transition_state(unsubscribe.domain, :unsubscribed)
 
-    deliver_worker.stop
     @workers.delete(deliver_worker)
+    deliver_worker.stop
 
     @redis.del(key_for(unsubscribe.domain))
   end
@@ -188,6 +188,9 @@ class PubRelay::SubscriptionManager
 
   def trap(agent, exception)
     return log.error("Trapped agent was not a DeliverWorker!") unless agent.is_a? DeliverWorker
+
+    # This is a worker unsubscribing
+    return if agent.stopping? && !@workers.includes?(agent)
 
     if exception
       Earl::Logger.error(agent, exception) if exception
