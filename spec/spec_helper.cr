@@ -12,6 +12,21 @@ SPEC_PKEY  = OpenSSL::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
 
 Spec.before_each { SPEC_REDIS.flushdb }
 
+class ErrorAgent
+  include Earl::Agent
+
+  getter exception : Exception?
+
+  def call
+    raise "Cannot start ErrorAgent"
+  end
+
+  def trap(agent, exception)
+    raise "Two exceptions logged!" unless @exception.nil?
+    @exception = exception
+  end
+end
+
 def request(method, resource, headers = nil, body = nil)
   request = HTTP::Request.new(method, resource, headers, body)
 

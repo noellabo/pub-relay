@@ -42,6 +42,10 @@ class PubRelay::SubscriptionManager
     @workers = Set(DeliverWorker).new
     @subscribed_workers = Set(DeliverWorker).new
 
+    load_subscriptions
+  end
+
+  private def load_subscriptions
     @redis.keys(key_for("*")).each do |key|
       key = key.as(String)
 
@@ -215,7 +219,15 @@ class PubRelay::SubscriptionManager
   end
 
   def reset
-    @workers.each(&.recycle)
+    old_workers = @workers
+
+    @workers = Set(DeliverWorker).new
+    @subscribed_workers = Set(DeliverWorker).new
+    load_subscriptions
+
+    old_workers.each do |worker|
+      worker.stop if worker.running?
+    end
   end
 end
 

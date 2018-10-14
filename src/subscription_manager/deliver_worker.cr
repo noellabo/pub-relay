@@ -87,5 +87,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
 
   def terminate
     @client.try(&.close)
+  ensure
+    @client = nil
   end
 end
