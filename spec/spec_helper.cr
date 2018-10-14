@@ -7,6 +7,11 @@ Earl.application.spawn
 Earl::Logger.level = Earl::Logger::Severity::ERROR
 Earl::Logger.level = Earl::Logger::Severity::DEBUG if ENV["RELAY_DEBUG"]?
 
+SPEC_REDIS = Redis::PooledClient.new(url: ENV["REDIS_URL"]? || "redis://localhost")
+SPEC_PKEY  = OpenSSL::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
+
+Spec.before_each { SPEC_REDIS.flushdb }
+
 def request(method, resource, headers = nil, body = nil)
   request = HTTP::Request.new(method, resource, headers, body)
 
@@ -16,14 +21,21 @@ def request(method, resource, headers = nil, body = nil)
 
   context = HTTP::Server::Context.new(request, response)
 
-  private_key = OpenSSL::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
+  stats = PubRelay::Stats.new
+  subscription_manager = PubRelay::SubscriptionManager.new(
+    relay_domain: "example.com",
+    private_key: SPEC_PKEY,
+    redis: SPEC_REDIS,
+    stats: stats
+  )
+
   PubRelay::WebServer.new(
     domain: "example.com",
-    private_key: private_key,
-    redis: Redis::PooledClient.new(url: ENV["REDIS_URL"]? || "redis://localhost"),
+    private_key: SPEC_PKEY,
+    subscription_manager: subscription_manager,
     bindhost: "localhost",
     port: 0,
-    stats: PubRelay::Stats.new
+    stats: stats
   ).call(context)
 
   {response.status_code, response_body.to_s, response.headers}
