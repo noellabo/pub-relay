@@ -22,6 +22,12 @@ end
 private alias SubMan = PubRelay::SubscriptionManager
 
 describe PubRelay::SubscriptionManager do
+  it "handles unsubscribing non-existant subscriptions" do
+    with_subscription_manager do |manager|
+      manager.send SubMan::Unsubscription.new("non-existant.com")
+    end
+  end
+
   it "recycles gracefully" do
     with_subscription_manager do |manager|
       # Send a subscription to spawn a worker

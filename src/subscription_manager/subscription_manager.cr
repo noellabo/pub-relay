@@ -125,6 +125,8 @@ class PubRelay::SubscriptionManager
   end
 
   def call(unsubscribe : Unsubscription)
+    return unless @redis.exists(key_for(unsubscribe.domain)) == 1
+
     deliver_worker = @workers.find { |worker| worker.domain == unsubscribe.domain }
     raise "Worker not found for unsubscribe" unless deliver_worker
     @subscribed_workers.delete(deliver_worker)
