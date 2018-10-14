@@ -1,21 +1,19 @@
-require "./converters"
-
-class Activity
+class PubRelay::Activity
   include JSON::Serializable
 
-  getter id : String?
+  getter id : String
   getter object : String | Object
 
-  @[JSON::Field(key: "type", converter: FuzzyStringArrayConverter)]
+  @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter types : Array(String)
 
-  @[JSON::Field(key: "signature", converter: PresenceConverter)]
+  @[JSON::Field(key: "signature", converter: PubRelay::Activity::PresenceConverter)]
   getter? signature_present = false
 
-  @[JSON::Field(converter: FuzzyStringArrayConverter)]
+  @[JSON::Field(converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter to = [] of String
 
-  @[JSON::Field(converter: FuzzyStringArrayConverter)]
+  @[JSON::Field(converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter cc = [] of String
 
   def follow?
@@ -54,9 +52,38 @@ class Activity
   class Object
     include JSON::Serializable
 
-    getter id : String?
+    getter id : String
 
-    @[JSON::Field(key: "type", converter: FuzzyStringArrayConverter)]
+    @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
     getter types : Array(String)
+  end
+
+  module PresenceConverter
+    def self.from_json(pull) : Bool
+      present = pull.kind != :null
+      pull.skip
+      present
+    end
+  end
+
+  module FuzzyStringArrayConverter
+    def self.from_json(pull) : Array(String)
+      strings = Array(String).new
+
+      case pull.kind
+      when :begin_array
+        pull.read_array do
+          if string = pull.read? String
+            strings << string
+          else
+            pull.skip
+          end
+        end
+      else
+        strings << pull.read_string
+      end
+
+      strings
+    end
   end
 end

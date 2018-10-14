@@ -3,14 +3,29 @@ require "webmock"
 
 require "../src/pub_relay"
 
-Spec.before_each do
-  PubRelay.redis.flushall
+Earl.application.spawn
+Earl::Logger.level = Earl::Logger::Severity::ERROR
+Earl::Logger.level = Earl::Logger::Severity::DEBUG if ENV["RELAY_DEBUG"]?
+
+SPEC_REDIS = Redis::PooledClient.new(url: ENV["REDIS_URL"]? || "redis://localhost")
+SPEC_PKEY  = OpenSSL::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
+
+Spec.before_each { SPEC_REDIS.flushdb }
+
+class ErrorAgent
+  include Earl::Agent
+
+  getter exception : Exception?
+
+  def call
+    raise "Cannot start ErrorAgent"
+  end
+
+  def trap(agent, exception)
+    raise "Two exceptions logged!" unless @exception.nil?
+    @exception = exception
+  end
 end
-
-PubRelay.private_key = OpenSSL::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
-PubRelay.host = "example.com"
-
-PubRelay.logger.level = Logger::WARN
 
 def request(method, resource, headers = nil, body = nil)
   request = HTTP::Request.new(method, resource, headers, body)
@@ -21,7 +36,22 @@ def request(method, resource, headers = nil, body = nil)
 
   context = HTTP::Server::Context.new(request, response)
 
-  PubRelay.new.call(context)
+  stats = PubRelay::Stats.new
+  subscription_manager = PubRelay::SubscriptionManager.new(
+    relay_domain: "example.com",
+    private_key: SPEC_PKEY,
+    redis: SPEC_REDIS,
+    stats: stats
+  )
+
+  PubRelay::WebServer.new(
+    domain: "example.com",
+    private_key: SPEC_PKEY,
+    subscription_manager: subscription_manager,
+    bindhost: "localhost",
+    port: 0,
+    stats: stats
+  ).call(context)
 
   {response.status_code, response_body.to_s, response.headers}
 end

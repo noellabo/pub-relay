@@ -1,6 +1,6 @@
 require "./spec_helper"
 
-describe PubRelay do
+describe PubRelay::WebServer do
   describe "webfinger" do
     it "works" do
       status_code, body, headers = request("GET", "/.well-known/webfinger?resource=acct%3Arelay%40example.com")

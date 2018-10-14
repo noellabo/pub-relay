@@ -1,4 +1,4 @@
-require "./spec_helper"
+require "../spec_helper"
 
 private def post_inbox(headers, body = nil)
   request("POST", "/inbox", headers, body)
@@ -16,10 +16,12 @@ private def expect_signature_fails(signature_header, expected_body)
   end
 end
 
+private alias HTTPSignature = PubRelay::WebServer::HTTPSignature
+
 private def sir_boops_actor
-  InboxHandler::Actor.new(
+  HTTPSignature::Actor.new(
     id: "https://mastodon.sergal.org/users/Sir_Boops",
-    public_key: InboxHandler::Key.new(
+    public_key: HTTPSignature::Key.new(
       public_key_pem: <<-KEY,
             -----BEGIN PUBLIC KEY-----
             MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvwDujxmxoYHs64MyVB3L
@@ -38,7 +40,7 @@ private def sir_boops_actor
   )
 end
 
-describe InboxHandler do
+describe PubRelay::WebServer::HTTPSignature do
   it "fails unsigned requests" do
     status_code, body = post_inbox(HTTP::Headers{"Signatur" => "typo"})
     status_code.should eq(401)
@@ -46,7 +48,7 @@ describe InboxHandler do
   end
 
   expect_signature_fails("", "did not contain '='")
-  expect_signature_fails("foo=bar, foo2", %q(param "foo2" did not contain '='))
+  expect_signature_fails("foo=bar, foo2", %q(param did not contain '=': "foo2"))
   expect_signature_fails(%q(foo="), %q(malformed quoted-string))
   expect_signature_fails(%q(foo="bar), %q(malformed quoted-string))
   expect_signature_fails(%q(foo="bar\"), %q(malformed quoted-string))
@@ -88,7 +90,7 @@ describe InboxHandler do
 
   it "succeeds with empty endpoints object" do
     File.open("spec/data/actor_empty_endpoints.json") do |file|
-      actor = Union(InboxHandler::Actor, InboxHandler::Key).from_json(file).as(InboxHandler::Actor)
+      actor = Union(HTTPSignature::Actor, HTTPSignature::Key).from_json(file).as(HTTPSignature::Actor)
       actor.inbox_url.should eq("https://microblog.pub/inbox")
     end
   end
@@ -205,7 +207,7 @@ describe InboxHandler do
         status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
         status_code.should eq(400)
-        body.should contain(%q(Header "user-agent" was supposed to be signed but was missing from the request))
+        body.should contain(%q(Header was supposed to be signed but was missing from the request: "user-agent"))
       end
     end
   end
