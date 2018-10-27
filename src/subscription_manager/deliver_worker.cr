@@ -33,6 +33,49 @@ class PubRelay::SubscriptionManager::DeliverWorker
       return
     end
 
+    headers = request_headers(delivery)
+
+    start_time = Time.monotonic
+    begin
+      response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
+    rescue
+      @client = nil
+
+      begin
+        response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
+      rescue ex : Socket::Error | Errno | IO::Timeout
+        # Errno is not expected unless it's connection refused
+        raise ex if ex.is_a?(Errno) && ex.errno != Errno::ECONNREFUSED
+
+        send_result(delivery, ex.inspect, start_time)
+        return
+      end
+    end
+
+    send_result(delivery, response.status_code, start_time)
+
+    if delivery.accept && response.success?
+      @subscription_manager.send SubscriptionManager::AcceptSent.new(@domain)
+    end
+  rescue ex
+    @stats.send Stats::DeliveryPayload.new(@domain, ex.inspect, delivery.counter)
+    raise ex
+  end
+
+  def send_result(delivery, status, start_time)
+    time = Time.monotonic - start_time
+    message = "POST #{@inbox_url} - #{status} (#{time.total_milliseconds}ms)"
+
+    if status.is_a?(Int) && 200 <= status < 300
+      log.debug message
+    else
+      log.info message
+    end
+
+    @stats.send Stats::DeliveryPayload.new(@domain, status.to_s, delivery.counter)
+  end
+
+  def request_headers(delivery)
     body_hash = OpenSSL::Digest.new("sha256")
     body_hash.update(delivery.message)
     body_hash = Base64.strict_encode(body_hash.digest)
@@ -55,39 +98,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
 
     headers["Signature"] = %(keyId="https://#{@relay_domain}/actor",headers="#{signed_headers}",signature="#{Base64.strict_encode(signature)}")
 
-    start_time = Time.monotonic
-    begin
-      response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
-    rescue
-      @client = nil
-      begin
-        response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
-      rescue ex : Socket::Error | Errno | IO::Timeout
-        # Errno is not expected unless it's connection refused
-        raise ex if ex.is_a?(Errno) && ex.errno != Errno::ECONNREFUSED
-
-        time = Time.monotonic - start_time
-        log.info "POST #{@inbox_url} - #{ex.message} (#{ex.class}) (#{time.total_milliseconds}ms)"
-        @stats.send Stats::DeliveryPayload.new(@domain, ex.inspect, delivery.counter)
-        return
-      end
-    end
-    time = Time.monotonic - start_time
-
-    if response.success?
-      log.debug "POST #{@inbox_url} - #{response.status_code} (#{time.total_milliseconds}ms)"
-    else
-      log.info "POST #{@inbox_url} - #{response.status_code} (#{time.total_milliseconds}ms)"
-    end
-
-    @stats.send Stats::DeliveryPayload.new(@domain, response.status_code.to_s, delivery.counter)
-
-    if delivery.accept && response.success?
-      @subscription_manager.send SubscriptionManager::AcceptSent.new(@domain)
-    end
-  rescue ex
-    @stats.send Stats::DeliveryPayload.new(@domain, ex.inspect, delivery.counter)
-    raise ex
+    headers
   end
 
   def reset
