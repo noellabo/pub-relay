@@ -17,6 +17,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
     @stats : Stats,
     @subscription_manager : SubscriptionManager
   )
+    @mailbox = Channel::Buffered(Delivery).new(100)
   end
 
   getter(client : HTTP::Client) do

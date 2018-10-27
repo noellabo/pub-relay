@@ -147,14 +147,22 @@ class PubRelay::SubscriptionManager
     counter = new_counter
     delivery = DeliverWorker::Delivery.new(deliver.message, deliver.source_domain, counter, accept: false)
 
-    select_actions = @subscribed_workers.map(&.mailbox.send_select_action(delivery))
-
-    spawn do
-      until select_actions.empty?
-        index, _ = Channel.select(select_actions)
-        select_actions.delete_at(index)
+    @subscribed_workers.each do |worker|
+      # TODO: checking then sending is a race condition with threads
+      if worker.mailbox.full?
+        # backlog too high!
+        fail_worker(worker)
+      else
+        worker.send(delivery)
       end
     end
+  end
+
+  def fail_worker(worker)
+    @subscribed_workers.delete(worker)
+    transition_state(worker.domain, :failed)
+
+    worker.stop
   end
 
   @deliver_counter = 0
