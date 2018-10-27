@@ -30,12 +30,12 @@ class PubRelay::Activity
 
   PUBLIC_COLLECTION = "https://www.w3.org/ns/activitystreams#Public"
 
-  def object_is_public_collection?
+  def object_id
     case object = @object
     when String
-      object == PUBLIC_COLLECTION
+      object
     when Object
-      object.id == PUBLIC_COLLECTION
+      object.id
     end
   end
 

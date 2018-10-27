@@ -35,7 +35,7 @@ class PubRelay::WebServer::InboxHandler
   end
 
   def handle_follow(actor, activity)
-    unless activity.object_is_public_collection?
+    unless activity.object_id == Activity::PUBLIC_COLLECTION
       error(400, "Follow only allowed for #{Activity::PUBLIC_COLLECTION}")
     end
 
