@@ -16,6 +16,10 @@ class PubRelay::Activity
   @[JSON::Field(converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter cc = [] of String
 
+  def initialize(*, @id, @object, @types, @signature_present = false,
+                 @to = [] of String, @cc = [] of String)
+  end
+
   def follow?
     types.includes? "Follow"
   end
@@ -64,6 +68,10 @@ class PubRelay::Activity
       pull.skip
       present
     end
+
+    def self.to_json(present, json)
+      raise "Cannot serialise present signature" if present
+    end
   end
 
   module FuzzyStringArrayConverter
@@ -84,6 +92,10 @@ class PubRelay::Activity
       end
 
       strings
+    end
+
+    def self.to_json(array, json)
+      array.to_json(json)
     end
   end
 end
