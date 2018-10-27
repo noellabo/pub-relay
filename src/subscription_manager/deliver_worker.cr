@@ -60,7 +60,17 @@ class PubRelay::SubscriptionManager::DeliverWorker
       response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
     rescue
       @client = nil
-      response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
+      begin
+        response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
+      rescue ex : Socket::Error | Errno | IO::Timeout
+        # Errno is not expected unless it's connection refused
+        raise ex if ex.is_a?(Errno) && ex.errno != Errno::ECONNREFUSED
+
+        time = Time.monotonic - start_time
+        log.info "POST #{@inbox_url} - #{ex.message} (#{ex.class}) (#{time.total_milliseconds}ms)"
+        @stats.send Stats::DeliveryPayload.new(@domain, ex.inspect, delivery.counter)
+        return
+      end
     end
     time = Time.monotonic - start_time
 
