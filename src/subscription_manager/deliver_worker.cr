@@ -75,10 +75,9 @@ class PubRelay::SubscriptionManager::DeliverWorker
     if delivery.accept && response.success?
       @subscription_manager.send SubscriptionManager::AcceptSent.new(@domain)
     end
-  rescue exception
-    exception_code = exception.try(&.inspect) || "Exited"
-    @stats.send Stats::DeliveryPayload.new(@domain, exception_code, delivery.counter)
-    raise exception
+  rescue ex
+    @stats.send Stats::DeliveryPayload.new(@domain, ex.inspect, delivery.counter)
+    raise ex
   end
 
   def reset
