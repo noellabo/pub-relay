@@ -59,7 +59,9 @@ class PubRelay::WebServer::InboxHandler
   end
 
   def handle_forward(actor, request_body)
-    @subscription_manager.deliver(request_body, source_domain: actor.domain)
+    @subscription_manager.send(
+      SubscriptionManager::Deliver.new(request_body, source_domain: actor.domain)
+    )
   end
 
   private def error(status_code, error_code, user_message = "")

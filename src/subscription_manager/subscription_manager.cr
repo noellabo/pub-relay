@@ -11,7 +11,11 @@ class PubRelay::SubscriptionManager
   record Unsubscription,
     domain : String
 
-  include Earl::Artist(Subscription | AcceptSent | Unsubscription)
+  record Deliver,
+    message : String,
+    source_domain : String
+
+  include Earl::Artist(Subscription | AcceptSent | Unsubscription | Deliver)
 
   enum State
     Pending
@@ -139,9 +143,9 @@ class PubRelay::SubscriptionManager
     @redis.del(key_for(unsubscribe.domain))
   end
 
-  def deliver(message : String, source_domain : String)
+  def call(deliver : Deliver)
     counter = new_counter
-    delivery = DeliverWorker::Delivery.new(message, source_domain, counter, accept: false)
+    delivery = DeliverWorker::Delivery.new(deliver.message, deliver.source_domain, counter, accept: false)
 
     select_actions = @subscribed_workers.map(&.mailbox.send_select_action(delivery))
 
