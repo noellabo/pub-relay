@@ -7,17 +7,14 @@ class PubRelay::Activity
   @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter types : Array(String)
 
-  @[JSON::Field(key: "signature", converter: PubRelay::Activity::PresenceConverter)]
-  getter? signature_present = false
-
   @[JSON::Field(converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter to = [] of String
 
   @[JSON::Field(converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter cc = [] of String
 
-  def initialize(*, @id, @object, @types, @signature_present = false,
-                 @to = [] of String, @cc = [] of String)
+  def initialize(*, @id, @object, @types, @to = [] of String, @cc = [] of String)
+  end
   end
 
   def follow?
@@ -50,7 +47,7 @@ class PubRelay::Activity
   VALID_TYPES = {"Create", "Update", "Delete", "Announce", "Undo"}
 
   def valid_for_rebroadcast?
-    signature_present? && addressed_to_public? && types.any? { |type| VALID_TYPES.includes? type }
+    addressed_to_public? && types.any? { |type| VALID_TYPES.includes? type }
   end
 
   class Object
@@ -60,18 +57,6 @@ class PubRelay::Activity
 
     @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
     getter types : Array(String)
-  end
-
-  module PresenceConverter
-    def self.from_json(pull) : Bool
-      present = pull.kind != :null
-      pull.skip
-      present
-    end
-
-    def self.to_json(present, json)
-      raise "Cannot serialise present signature" if present
-    end
   end
 
   module FuzzyStringArrayConverter
