@@ -11,6 +11,7 @@ SPEC_REDIS = Redis::PooledClient.new(url: ENV["REDIS_URL"]? || "redis://localhos
 SPEC_PKEY  = OpenSSL::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
 
 Spec.before_each { SPEC_REDIS.flushdb }
+Spec.before_each { WebMock.reset }
 
 class ErrorAgent
   include Earl::Agent

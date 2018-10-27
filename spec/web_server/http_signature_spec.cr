@@ -65,27 +65,23 @@ describe PubRelay::WebServer::HTTPSignature do
   end
 
   it "fails with 404 response from keyId URL" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://example.com/key")
-        .to_return(status: 404, body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://example.com/key")
+      .to_return(status: 404, body: sir_boops_actor.to_json)
 
-      status_code, body = post_signature(%q(keyId="https://example.com/key", signature="a"))
+    status_code, body = post_signature(%q(keyId="https://example.com/key", signature="a"))
 
-      status_code.should eq(400)
-      body.should contain(%q(Got non-200 response from fetching "https://example.com/key"))
-    end
+    status_code.should eq(400)
+    body.should contain(%q(Got non-200 response from fetching "https://example.com/key"))
   end
 
   it "fails with invalid JSON from keyId URL" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://example.com/key")
-        .to_return(body: sir_boops_actor.to_json.gsub('"', '\''))
+    WebMock.stub("GET", "https://example.com/key")
+      .to_return(body: sir_boops_actor.to_json.gsub('"', '\''))
 
-      status_code, body = post_signature(%q(keyId="https://example.com/key", signature="a"))
+    status_code, body = post_signature(%q(keyId="https://example.com/key", signature="a"))
 
-      status_code.should eq(400)
-      body.should contain(%q(Invalid JSON from fetching "https://example.com/key"))
-    end
+    status_code.should eq(400)
+    body.should contain(%q(Invalid JSON from fetching "https://example.com/key"))
   end
 
   it "succeeds with empty endpoints object" do
@@ -96,119 +92,103 @@ describe PubRelay::WebServer::HTTPSignature do
   end
 
   it "fails with no request body" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://example.com/key")
-        .to_return(body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://example.com/key")
+      .to_return(body: sir_boops_actor.to_json)
 
-      status_code, body = post_signature(%q(keyId="https://example.com/key", signature="a"))
+    status_code, body = post_signature(%q(keyId="https://example.com/key", signature="a"))
 
-      status_code.should eq(400)
-      body.should contain(%q(No request body))
-    end
+    status_code.should eq(400)
+    body.should contain(%q(No request body))
   end
 
   it "fails with extremely large request body" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://example.com/key")
-        .to_return(body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://example.com/key")
+      .to_return(body: sir_boops_actor.to_json)
 
-      File.open("/dev/zero") do |zeroes|
-        status_code, body = post_signature(%q(keyId="https://example.com/key", signature="a"), body: zeroes)
+    File.open("/dev/zero") do |zeroes|
+      status_code, body = post_signature(%q(keyId="https://example.com/key", signature="a"), body: zeroes)
 
-        status_code.should eq(400)
-        body.should contain(%q(Request body too large))
-      end
+      status_code.should eq(400)
+      body.should contain(%q(Request body too large))
     end
   end
 
   it "fails with invalid signature base64" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
-        .to_return(body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
+      .to_return(body: sir_boops_actor.to_json)
 
-      File.open("spec/data/signed_post_bad_base64.http") do |file|
-        signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
-        status_code, body = post_inbox(signed_request.headers, signed_request.body)
+    File.open("spec/data/signed_post_bad_base64.http") do |file|
+      signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
+      status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(400)
-        body.should contain("Invalid base64")
-      end
+      status_code.should eq(400)
+      body.should contain("Invalid base64")
     end
   end
 
   it "successfully validates a signature from actor" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
-        .to_return(body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
+      .to_return(body: sir_boops_actor.to_json)
 
-      File.open("spec/data/signed_post.http") do |file|
-        signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
-        status_code, body = post_inbox(signed_request.headers, signed_request.body)
+    File.open("spec/data/signed_post.http") do |file|
+      signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
+      status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(202)
-      end
+      status_code.should eq(202)
     end
   end
 
   it "successfully validates a signature from key" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops")
-        .to_return(body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops")
+      .to_return(body: sir_boops_actor.to_json)
 
-      WebMock.stub("GET", "https://mastodon.sergal.org/keys/Sir_Boops")
-        .to_return(body: sir_boops_actor.public_key.to_json)
+    WebMock.stub("GET", "https://mastodon.sergal.org/keys/Sir_Boops")
+      .to_return(body: sir_boops_actor.public_key.to_json)
 
-      File.open("spec/data/signed_post_keyurl.http") do |file|
-        signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
-        status_code, body = post_inbox(signed_request.headers, signed_request.body)
+    File.open("spec/data/signed_post_keyurl.http") do |file|
+      signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
+      status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(202)
-      end
+      status_code.should eq(202)
     end
   end
 
   it "fails to validate a modified signature" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
-        .to_return(body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
+      .to_return(body: sir_boops_actor.to_json)
 
-      File.open("spec/data/signed_post_bad_signature.http") do |file|
-        signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
-        status_code, body = post_inbox(signed_request.headers, signed_request.body)
+    File.open("spec/data/signed_post_bad_signature.http") do |file|
+      signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
+      status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(401)
-        body.should contain(%q(cryptographic signature did not verify for "https://mastodon.sergal.org/users/Sir_Boops#main-key"))
-      end
+      status_code.should eq(401)
+      body.should contain(%q(cryptographic signature did not verify for "https://mastodon.sergal.org/users/Sir_Boops#main-key"))
     end
   end
 
   it "fails to validate with a tampered body" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
-        .to_return(body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
+      .to_return(body: sir_boops_actor.to_json)
 
-      File.open("spec/data/signed_post_tampered.http") do |file|
-        signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
-        status_code, body = post_inbox(signed_request.headers, signed_request.body)
+    File.open("spec/data/signed_post_tampered.http") do |file|
+      signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
+      status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(401)
-        body.should contain(%q(cryptographic signature did not verify for "https://mastodon.sergal.org/users/Sir_Boops#main-key"))
-      end
+      status_code.should eq(401)
+      body.should contain(%q(cryptographic signature did not verify for "https://mastodon.sergal.org/users/Sir_Boops#main-key"))
     end
   end
 
   it "fails to validate with missing headers" do
-    WebMock.wrap do
-      WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
-        .to_return(body: sir_boops_actor.to_json)
+    WebMock.stub("GET", "https://mastodon.sergal.org/users/Sir_Boops#main-key")
+      .to_return(body: sir_boops_actor.to_json)
 
-      File.open("spec/data/signed_post_missing_header.http") do |file|
-        signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
-        status_code, body = post_inbox(signed_request.headers, signed_request.body)
+    File.open("spec/data/signed_post_missing_header.http") do |file|
+      signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
+      status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-        status_code.should eq(400)
-        body.should contain(%q(Header was supposed to be signed but was missing from the request: "user-agent"))
-      end
+      status_code.should eq(400)
+      body.should contain(%q(Header was supposed to be signed but was missing from the request: "user-agent"))
     end
   end
 end
