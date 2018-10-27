@@ -15,6 +15,9 @@ class PubRelay::Activity
 
   def initialize(*, @id, @object, @types, @to = [] of String, @cc = [] of String)
   end
+
+  def initialize(*, @id, @object, type, @to = [] of String, @cc = [] of String)
+    @types = [type]
   end
 
   def follow?
