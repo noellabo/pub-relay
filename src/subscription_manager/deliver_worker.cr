@@ -72,7 +72,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
 
     @stats.send Stats::DeliveryPayload.new(@domain, response.status_code.to_s, delivery.counter)
 
-    if delivery.accept
+    if delivery.accept && response.success?
       @subscription_manager.send SubscriptionManager::AcceptSent.new(@domain)
     end
   rescue exception
