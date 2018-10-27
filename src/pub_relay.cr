@@ -7,6 +7,10 @@ require "earl"
 class PubRelay < Earl::Supervisor
   VERSION = "0.1.0"
 
+  getter stats : Stats
+  getter subscription_manager : SubscriptionManager
+  getter web_server : WebServer
+
   def initialize(
     domain : String,
     private_key : OpenSSL::RSA,
@@ -16,14 +20,13 @@ class PubRelay < Earl::Supervisor
   )
     super()
 
-    stats = Stats.new
-    monitor(stats)
+    @stats = Stats.new
+    @subscription_manager = SubscriptionManager.new(domain, private_key, redis, stats)
+    @web_server = WebServer.new(domain, private_key, subscription_manager, bindhost, port, stats)
 
-    subscription_manager = SubscriptionManager.new(domain, private_key, redis, stats)
-    monitor(subscription_manager)
-
-    web_server = WebServer.new(domain, private_key, subscription_manager, bindhost, port, stats)
-    monitor(web_server)
+    monitor(@stats)
+    monitor(@subscription_manager)
+    monitor(@web_server)
   end
 end
 
