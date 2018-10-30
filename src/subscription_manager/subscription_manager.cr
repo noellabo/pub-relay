@@ -26,7 +26,7 @@ class PubRelay::SubscriptionManager
     def transition?(new_state)
       case self
       when Pending
-        new_state.subscribed?
+        new_state.subscribed? || new_state.unsubscribed?
       when Subscribed
         new_state.unsubscribed? || new_state.failed?
       when Failed
