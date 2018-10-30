@@ -216,9 +216,9 @@ class PubRelay::SubscriptionManager
 
     if exception
       Earl::Logger.error(agent, exception) if exception
-      log.error { "#{agent.class.name} crashed (#{exception.class.name})" }
+      log.error { "worker for #{agent.domain} crashed (#{exception.class.name})" }
     else
-      log.error { "#{agent.class.name} exited early" } if self.running?
+      log.error { "worker for #{agent.domain} exited early" } if self.running?
     end
 
     agent.recycle if self.running?
