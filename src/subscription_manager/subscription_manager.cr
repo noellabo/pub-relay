@@ -60,6 +60,11 @@ class PubRelay::SubscriptionManager
       inbox_url = URI.parse inbox_url
       state = get_state(domain)
 
+      if state.failed?
+        transition_state(domain, :subscribed)
+        state = get_state(domain)
+      end
+
       deliver_worker = DeliverWorker.new(
         domain, inbox_url, @relay_domain, @private_key, @stats, self
       )
