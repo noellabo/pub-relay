@@ -208,8 +208,6 @@ class PubRelay::SubscriptionManager
     end
   end
 
-  @failure_counts = Hash(String, Int32).new(0)
-
   def trap(agent, exception)
     return log.error("Trapped agent was not a DeliverWorker!") unless agent.is_a? DeliverWorker
 
@@ -223,7 +221,6 @@ class PubRelay::SubscriptionManager
       log.error { "#{agent.class.name} exited early" } if self.running?
     end
 
-    @failure_counts[agent.domain] += 1
     agent.recycle if self.running?
   end
 
