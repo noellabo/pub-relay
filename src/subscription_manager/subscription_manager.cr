@@ -146,6 +146,8 @@ class PubRelay::SubscriptionManager
     deliver_worker.stop
 
     @redis.del(key_for(unsubscribe.domain))
+
+    @stats.send Stats::UnsubscribePayload.new(unsubscribe.domain)
   end
 
   def call(deliver : Deliver)

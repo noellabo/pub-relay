@@ -11,7 +11,10 @@ class PubRelay::Stats
   record DeliveryCounterPayload,
     counter : Int32
 
-  include Earl::Artist(HTTPResponsePayload | DeliveryPayload | DeliveryCounterPayload)
+  record UnsubscribePayload,
+    domain : String
+
+  include Earl::Artist(HTTPResponsePayload | DeliveryPayload | DeliveryCounterPayload | UnsubscribePayload)
 
   @response_codes = Hash(String, Int32).new(default_value: 0)
   @response_codes_per_domain = Hash(String, Hash(String, Int32)).new do |hash, key|
@@ -46,6 +49,11 @@ class PubRelay::Stats
   def call(payload : DeliveryCounterPayload)
     log.warn "Delivery counter went backwards!" unless payload.counter > @latest_delivery
     @latest_delivery = payload.counter
+  end
+
+  def call(unsubscribe : UnsubscribePayload)
+    @delivery_codes_per_domain.delete(unsubscribe.domain)
+    @latest_delivery_per_domain.delete(unsubscribe.domain)
   end
 
   def to_json(io)
