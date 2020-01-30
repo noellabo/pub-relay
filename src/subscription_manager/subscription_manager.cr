@@ -11,17 +11,31 @@ class PubRelay::SubscriptionManager
   record Unsubscription,
     domain : String
 
+  record FollowSent,
+    domain : String,
+    inbox_url : URI,
+    following_id : String,
+    following_actor_id : String
+
+  record AcceptReceive,
+    domain : String
+
+  record Announce,
+    object : String,
+    source_domain : String
+
   record Deliver,
     message : String,
     source_domain : String
 
-  include Earl::Artist(Subscription | AcceptSent | Unsubscription | Deliver)
+  include Earl::Artist(Subscription | AcceptSent | Unsubscription | FollowSent | AcceptReceive | Announce | Deliver)
 
   enum State
     Pending
     Subscribed
     Failed
     Unsubscribed
+    Undefined
 
     def transition?(new_state)
       case self
@@ -31,7 +45,7 @@ class PubRelay::SubscriptionManager
         new_state.unsubscribed? || new_state.failed?
       when Failed
         new_state.subscribed? || new_state.unsubscribed?
-      when Unsubscribed
+      when Unsubscribed, Undefined
         false
       end
     end
@@ -59,6 +73,7 @@ class PubRelay::SubscriptionManager
       inbox_url = @redis.hget(key, "inbox_url").not_nil!
       inbox_url = URI.parse inbox_url
       state = get_state(domain)
+      following_state = get_following_state(domain)
 
       if state.failed?
         transition_state(domain, :subscribed)
@@ -70,7 +85,7 @@ class PubRelay::SubscriptionManager
       )
 
       @workers << deliver_worker
-      @subscribed_workers << deliver_worker if state.subscribed?
+      @subscribed_workers << deliver_worker if state.subscribed? && (following_state.undefined? || following_state.subscribed?)
     end
 
     log.info "Found #{@workers.size} subscriptions, #{@subscribed_workers.size} of which are subscribed"
@@ -123,6 +138,49 @@ class PubRelay::SubscriptionManager
     deliver_worker.send delivery
   end
 
+  def call(following : FollowSent)
+    log.info "Send follow to #{following.domain}"
+
+    deliver_worker = DeliverWorker.new(
+      following.domain, following.inbox_url, @relay_domain, @private_key, @stats, self
+    )
+
+    @redis.hmset(key_for(following.domain), {
+      inbox_url:          following.inbox_url,
+      following_id:       following.following_id,
+      following_actor_id: following.following_actor_id,
+      following_state:    State::Pending.to_s,
+    })
+
+    supervise deliver_worker
+
+    follow_activity = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+
+      id:     following.following_id,
+      type:   "Follow",
+      actor:  route_url("/actor"),
+      object: following.following_actor_id,
+    }
+
+    counter = new_counter
+    delivery = DeliverWorker::Delivery.new(
+      follow_activity.to_json, @relay_domain, counter, accept: false
+    )
+    deliver_worker.send delivery
+  end
+
+  def call(accept : AcceptReceive)
+    following_state = get_following_state(accept.domain)
+    raise "#{accept.domain}'s state as #{following_state}, not pending" unless following_state.pending?
+    transition_following_state(accept.domain, :subscribed)
+
+    worker = @workers.find { |worker| worker.domain == accept.domain }
+    raise "Worker not found" unless worker
+    state = get_state(accept.domain)
+    @subscribed_workers << worker if state.subscribed?
+  end
+
   def call(accept : AcceptSent)
     state = get_state(accept.domain)
     raise "#{accept.domain}'s state as #{state}, not pending" unless state.pending?
@@ -130,7 +188,8 @@ class PubRelay::SubscriptionManager
 
     worker = @workers.find { |worker| worker.domain == accept.domain }
     raise "Worker not found" unless worker
-    @subscribed_workers << worker
+    following_state = get_following_state(accept.domain)
+    @subscribed_workers << worker if following_state.undefined? || following_state.subscribed?
   end
 
   def call(unsubscribe : Unsubscription)
@@ -148,6 +207,27 @@ class PubRelay::SubscriptionManager
     @redis.del(key_for(unsubscribe.domain))
 
     @stats.send Stats::UnsubscribePayload.new(unsubscribe.domain)
+  end
+
+  def call(announce : Announce)
+    announce_activity = {
+      "@context": "https://www.w3.org/ns/activitystreams",
+
+      id:        route_url("/actor#announce/#{UUID.random}"),
+      type:      "Announce",
+      actor:     route_url("/actor"),
+      object:    announce.object,
+      to:        [Activity::PUBLIC_COLLECTION],
+      published: Time.utc,
+    }
+
+    counter = new_counter
+    delivery = DeliverWorker::Delivery.new(announce_activity.to_json, announce.source_domain, counter, accept: false)
+
+    @subscribed_workers.each do |worker|
+      # TODO: checking then sending is a race condition with threads
+      worker.send(delivery)
+    end
   end
 
   def call(deliver : Deliver)
@@ -184,10 +264,23 @@ class PubRelay::SubscriptionManager
     @redis.hset(key_for(domain), "state", new_state.to_s)
   end
 
+  private def transition_following_state(domain, new_state : State)
+    state = get_following_state(domain)
+
+    raise "Invalid transition for #{domain} (#{state} -> #{new_state})" unless state.transition? new_state
+    log.info "Transitioning #{domain} (#{state} -> #{new_state})"
+
+    @redis.hset(key_for(domain), "following_state", new_state.to_s)
+  end
+
   private def get_state(domain) : State
     state = @redis.hget(key_for(domain), "state")
-    raise "BUG: subscription doesn't exist" unless state
-    State.parse(state)
+    state.nil? ? State::Unsubscribed : State.parse(state)
+  end
+
+  private def get_following_state(domain) : State
+    state = @redis.hget(key_for(domain), "following_state")
+    state.nil? ? State::Undefined : State.parse(state)
   end
 
   private def key_for(domain)

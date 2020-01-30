@@ -7,6 +7,9 @@ class PubRelay::Activity
   @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter types : Array(String)
 
+  @[JSON::Field(key: "signature", converter: PubRelay::Activity::PresenceConverter)]
+  getter? signature_present = false
+
   @[JSON::Field(converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter to = [] of String
 
@@ -32,6 +35,14 @@ class PubRelay::Activity
     end
   end
 
+  def accept?
+    types.includes? "Accept"
+  end
+
+  def reject?
+    types.includes? "Reject"
+  end
+
   PUBLIC_COLLECTION = "https://www.w3.org/ns/activitystreams#Public"
 
   def object_id
@@ -47,10 +58,18 @@ class PubRelay::Activity
     to.includes?(PUBLIC_COLLECTION) || cc.includes?(PUBLIC_COLLECTION)
   end
 
-  VALID_TYPES = {"Create", "Update", "Delete", "Announce", "Undo"}
+  FORWARD_TYPES = {"Update", "Delete", "Undo"}
+  RELAY_TYPES   = {"Create", "Announce"}
 
   def valid_for_rebroadcast?
-    addressed_to_public? && types.any? { |type| VALID_TYPES.includes? type }
+    addressed_to_public? && (
+      types.any? { |type| FORWARD_TYPES.includes? type } ||
+        signature_present? && types.any? { |type| RELAY_TYPES.includes? type }
+    )
+  end
+
+  def valid_for_relay?
+    types.any? { |type| RELAY_TYPES.includes? type }
   end
 
   class Object
@@ -60,6 +79,18 @@ class PubRelay::Activity
 
     @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
     getter types : Array(String)
+  end
+
+  module PresenceConverter
+    def self.from_json(pull) : Bool
+      present = pull.kind != JSON::PullParser::Kind::Null
+      pull.skip
+      present
+    end
+
+    def self.to_json(value, json : JSON::Builder)
+      json.bool value
+    end
   end
 
   module FuzzyStringArrayConverter

@@ -140,6 +140,9 @@ struct PubRelay::WebServer::HTTPSignature
     property public_key : Key
     getter endpoints : Endpoints?
     getter inbox : String
+    getter type : String = ""
+    getter preferredUsername : String?
+    getter name : String?
 
     def initialize(@id, @public_key, @endpoints, @inbox)
     end
@@ -150,6 +153,14 @@ struct PubRelay::WebServer::HTTPSignature
 
     def domain
       URI::Punycode.to_ascii(URI.parse(id).host.not_nil!.strip.downcase)
+    end
+
+    def username
+      preferredUsername || File.basename(URI.parse(id).path.not_nil!.strip.downcase)
+    end
+
+    def pleroma_relay?
+      name == "Pleroma" && type == "Application" && username == "relay"
     end
   end
 
