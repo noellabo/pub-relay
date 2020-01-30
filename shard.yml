@@ -1,8 +1,9 @@
 name: pub-relay
-version: 0.1.0
+version: 0.2.0
 
 authors:
   - RX14 <chris@rx14.co.uk>
+  - noellabo <noel.yoshiba@gmail.com>
 
 dependencies:
   earl:
