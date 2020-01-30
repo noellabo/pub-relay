@@ -18,7 +18,7 @@ class PubRelay::WebServer
 
   def initialize(
     @domain : String,
-    @private_key : OpenSSL::RSA,
+    @private_key : OpenSSL::PKey::RSA,
     @subscription_manager : SubscriptionManager,
     @bindhost : String,
     @port : Int32,

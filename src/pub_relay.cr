@@ -13,7 +13,7 @@ class PubRelay < Earl::Supervisor
 
   def initialize(
     domain : String,
-    private_key : OpenSSL::RSA,
+    private_key : OpenSSL::PKey::RSA,
     redis : Redis::PooledClient,
     bindhost : String,
     port : Int32
