@@ -39,7 +39,7 @@ class PubRelay::SubscriptionManager
 
   def initialize(
     @relay_domain : String,
-    @private_key : OpenSSL::RSA,
+    @private_key : OpenSSL::PKey::RSA,
     @redis : Redis::PooledClient,
     @stats : Stats
   )
@@ -156,12 +156,7 @@ class PubRelay::SubscriptionManager
 
     @subscribed_workers.each do |worker|
       # TODO: checking then sending is a race condition with threads
-      if worker.mailbox.full?
-        # backlog too high!
-        fail_worker(worker)
-      else
-        worker.send(delivery)
-      end
+      worker.send(delivery)
     end
   end
 

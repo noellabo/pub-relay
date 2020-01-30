@@ -29,7 +29,7 @@ struct PubRelay::WebServer::HTTPSignature
 
     signed_string = build_signed_string(body, signature_params["headers"]?)
 
-    public_key = OpenSSL::RSA.new(actor.public_key.public_key_pem, is_private: false)
+    public_key = OpenSSL::PKey::RSA.new(actor.public_key.public_key_pem, is_private: false)
 
     begin
       signature = Base64.decode(signature)

@@ -13,11 +13,11 @@ class PubRelay::SubscriptionManager::DeliverWorker
     @domain : String,
     @inbox_url : URI,
     @relay_domain : String,
-    @private_key : OpenSSL::RSA,
+    @private_key : OpenSSL::PKey::RSA,
     @stats : Stats,
     @subscription_manager : SubscriptionManager
   )
-    @mailbox = Channel::Buffered(Delivery).new(100)
+    @mailbox = Channel(Delivery).new(100)
   end
 
   getter(client : HTTP::Client) do
@@ -82,9 +82,11 @@ class PubRelay::SubscriptionManager::DeliverWorker
     body_hash = Base64.strict_encode(body_hash.digest)
 
     headers = HTTP::Headers{
-      "Host"   => @inbox_url.host.not_nil!,
-      "Date"   => HTTP.format_time(Time.utc_now),
-      "Digest" => "SHA-256=#{body_hash}",
+      "Host"         => @inbox_url.host.not_nil!,
+      "Date"         => HTTP.format_time(Time.utc),
+      "Digest"       => "SHA-256=#{body_hash}",
+      "Content-Type" => "application/ld+json;profile=\"https://www.w3.org/ns/activitystreams\"",
+      "User-Agent"   => "pub-relay/#{PubRelay::VERSION} (#{route_url("")})",
     }
 
     signed_headers = "(request-target) host date digest"
@@ -95,9 +97,10 @@ class PubRelay::SubscriptionManager::DeliverWorker
       digest: #{headers["Digest"]}
       END
 
+    algorithm = "rsa-sha256"
     signature = @private_key.sign(OpenSSL::Digest.new("sha256"), signed_string)
 
-    headers["Signature"] = %(keyId="https://#{@relay_domain}/actor",headers="#{signed_headers}",signature="#{Base64.strict_encode(signature)}")
+    headers["Signature"] = %(keyId="https://#{@relay_domain}/actor",algorithm="#{algorithm}",headers="#{signed_headers}",signature="#{Base64.strict_encode(signature)}")
 
     headers
   end
@@ -110,5 +113,9 @@ class PubRelay::SubscriptionManager::DeliverWorker
     @client.try(&.close)
   ensure
     @client = nil
+  end
+
+  private def route_url(path)
+    "https://#{@domain}#{path}"
   end
 end

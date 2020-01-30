@@ -6,11 +6,11 @@ shards:
 
   earl:
     github: ysbaddaden/earl
-    commit: e809dff93f66793498c6140feef1b3e51b6f9ee4
+    commit: 2a732dfcca8241eaca86dc24c41435d7032dd5f2
 
   openssl_ext:
-    github: randomstate/openssl_ext
-    version: 0.1.1
+    github: crystal-extras/openssl_ext
+    commit: 47778f8ce761be1d1ad0f7b671401929d7f75d45
 
   pool:
     github: ysbaddaden/pool
@@ -22,5 +22,5 @@ shards:
 
   webmock:
     github: manastech/webmock.cr
-    version: 0.10.0
+    version: 0.12.1
 

@@ -67,7 +67,7 @@ class PubRelay::Activity
       strings = Array(String).new
 
       case pull.kind
-      when :begin_array
+      when JSON::PullParser::Kind::BeginArray
         pull.read_array do
           if string = pull.read? String
             strings << string

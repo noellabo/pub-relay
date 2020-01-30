@@ -8,7 +8,7 @@ Earl::Logger.level = Earl::Logger::Severity::ERROR
 Earl::Logger.level = Earl::Logger::Severity::DEBUG if ENV["RELAY_DEBUG"]?
 
 SPEC_REDIS = Redis::PooledClient.new(url: ENV["REDIS_URL"]? || "redis://localhost")
-SPEC_PKEY  = OpenSSL::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
+SPEC_PKEY  = OpenSSL::PKey::RSA.new(File.read(File.join(__DIR__, "test_actor.pem")))
 
 Spec.before_each { SPEC_REDIS.flushdb }
 Spec.before_each { WebMock.reset }
@@ -64,7 +64,7 @@ module WebMock
 end
 
 private class IntegrationTest
-  getter domain_keys = Hash(String, OpenSSL::RSA).new
+  getter domain_keys = Hash(String, OpenSSL::PKey::RSA).new
 
   def initialize
     @pub_relay = PubRelay.new("relay.com", SPEC_PKEY, SPEC_REDIS, "localhost", 0)
@@ -99,7 +99,7 @@ private class IntegrationTest
   end
 
   def add_domain(domain)
-    domain_keys[domain] = OpenSSL::RSA.new(512)
+    domain_keys[domain] = OpenSSL::PKey::RSA.new(512)
 
     domain_actor = HTTPSignature::Actor.new(
       id: "https://#{domain}/actor",
@@ -121,7 +121,7 @@ private class IntegrationTest
     body_hash = Base64.strict_encode(body_hash.digest)
 
     headers["Host"] = "relay.com"
-    headers["Date"] = HTTP.format_time(Time.utc_now)
+    headers["Date"] = HTTP.format_time(Time.utc)
     headers["Digest"] = "SHA-256=#{body_hash}"
 
     signed_headers = "(request-target) host date digest"
@@ -167,19 +167,12 @@ private class IntegrationTest
 
     signed_inbox_request(from: domain, body: activity.to_json)
 
-    500.times do
-      sleep 1.milliseconds
-      if !accept_channel.empty?
-        accept_channel.receive
+    accept_channel.receive
 
-        WebMock.registry.@stubs.delete(stub)
+    WebMock.registry.@stubs.delete(stub)
 
-        sleep 10.milliseconds
-
-        return
-      end
-    end
-
+    sleep 10.milliseconds
+  rescue
     raise "Accept not sent for subscribe to #{domain}"
   end
 
