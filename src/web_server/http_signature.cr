@@ -1,5 +1,5 @@
 struct PubRelay::WebServer::HTTPSignature
-  def initialize(@context : HTTP::Server::Context)
+  def initialize(@context : HTTP::Server::Context, @redis : Redis::PooledClient)
   end
 
   # Verify HTTP signatures according to https://tools.ietf.org/html/draft-cavage-http-signatures-06.
@@ -92,15 +92,23 @@ struct PubRelay::WebServer::HTTPSignature
     error(400, "Invalid JSON from fetching", "#{key_id.inspect}: #{ex.inspect_with_backtrace}")
   end
 
-  private def cached_fetch_json(url, json_class : JsonType.class) : JsonType forall JsonType
-    # TODO: actually cache this
-    headers = HTTP::Headers{"Accept" => "application/activity+json, application/ld+json"}
-    # TODO use HTTP::Client.new and set read timeout
-    response = HTTP::Client.get(url, headers: headers)
-    unless response.status_code == 200
-      error(400, "Got non-200 response from fetching", url.inspect)
+  CACHE_EXPIRE_SECOND = 2.day.to_i;
+
+  private def cached_fetch_json(url, json_class : JsonType.class, use_cache = true) : JsonType forall JsonType
+    remote_actor_body = use_cache ? @redis.get(key_for(url)) : nil
+    if remote_actor_body
+      @redis.expire(key_for(url), CACHE_EXPIRE_SECOND)
+    else
+      headers = HTTP::Headers{"Accept" => "application/activity+json, application/ld+json"}
+      # TODO use HTTP::Client.new and set read timeout
+      response = HTTP::Client.get(url, headers: headers)
+      unless response.status_code == 200
+        error(400, "Got non-200 response from fetching", url.inspect)
+      end
+      remote_actor_body = response.body
+      @redis.setex(key_for(url), CACHE_EXPIRE_SECOND, remote_actor_body)
     end
-    JsonType.from_json(response.body)
+    JsonType.from_json(remote_actor_body)
   end
 
   private def build_signed_string(body, signed_headers)
@@ -122,6 +130,10 @@ struct PubRelay::WebServer::HTTPSignature
         "#{header_name}: #{request_header}"
       end
     end
+  end
+
+  private def key_for(url)
+    "relay:remote_actor:cache:#{url}"
   end
 
   private def request

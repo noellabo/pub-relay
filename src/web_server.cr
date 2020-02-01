@@ -22,7 +22,8 @@ class PubRelay::WebServer
     @subscription_manager : SubscriptionManager,
     @bindhost : String,
     @port : Int32,
-    @stats : Stats
+    @stats : Stats,
+    @redis : Redis::PooledClient
   )
   end
 
@@ -136,7 +137,7 @@ class PubRelay::WebServer
   end
 
   private def handle_inbox(context)
-    InboxHandler.new(context, @domain, @subscription_manager).handle
+    InboxHandler.new(context, @domain, @subscription_manager, @redis).handle
   end
 
   private def route_url(path)
