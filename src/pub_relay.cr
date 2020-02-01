@@ -22,7 +22,7 @@ class PubRelay < Earl::Supervisor
 
     @stats = Stats.new
     @subscription_manager = SubscriptionManager.new(domain, private_key, redis, stats)
-    @web_server = WebServer.new(domain, private_key, subscription_manager, bindhost, port, stats)
+    @web_server = WebServer.new(domain, private_key, subscription_manager, bindhost, port, stats, redis)
 
     monitor(@stats)
     monitor(@subscription_manager)

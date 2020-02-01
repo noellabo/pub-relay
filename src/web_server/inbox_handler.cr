@@ -7,12 +7,13 @@ class PubRelay::WebServer::InboxHandler
   def initialize(
     @context : HTTP::Server::Context,
     @domain : String,
-    @subscription_manager : SubscriptionManager
+    @subscription_manager : SubscriptionManager,
+    @redis : Redis::PooledClient,
   )
   end
 
   def handle
-    http_signature = HTTPSignature.new(@context)
+    http_signature = HTTPSignature.new(@context, @redis)
     request_body, actor_from_signature = http_signature.verify_signature
 
     # TODO: handle blocks
