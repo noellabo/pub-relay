@@ -5,7 +5,7 @@ require "redis"
 require "earl"
 
 class PubRelay < Earl::Supervisor
-  VERSION = "0.1.0"
+  VERSION = "0.2.0"
 
   getter stats : Stats
   getter subscription_manager : SubscriptionManager
