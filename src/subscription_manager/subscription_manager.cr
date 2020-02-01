@@ -91,6 +91,10 @@ class PubRelay::SubscriptionManager
     log.info "Found #{@workers.size} subscriptions, #{@subscribed_workers.size} of which are subscribed"
   end
 
+  def peers
+    @subscribed_workers.map(&.domain)
+  end
+
   def call
     @workers.each do |worker|
       supervise worker
