@@ -53,6 +53,10 @@ class PubRelay::WebServer
       case {context.request.method, context.request.path}
       when {"GET", "/.well-known/webfinger"}
         serve_webfinger(context)
+      when {"GET", "/.well-known/nodeinfo"}
+        serve_nodeinfo_wellknown(context)
+      when {"GET", "/nodeinfo/2.0"}
+        serve_nodeinfo_2_0(context)
       when {"GET", "/actor"}
         serve_actor(context)
       when {"GET", "/stats"}
@@ -110,6 +114,44 @@ class PubRelay::WebServer
           href: route_url("/actor"),
         },
       },
+    }.to_json(ctx.response)
+  end
+
+  private def serve_nodeinfo_wellknown(ctx)
+    ctx.response.content_type = "application/json"
+    {
+      links:   {
+        {
+          rel:  "http://nodeinfo.diaspora.software/ns/schema/2.0",
+          href: route_url("/nodeinfo/2.0"),
+        },
+      },
+    }.to_json(ctx.response)
+  end
+
+  private def serve_nodeinfo_2_0(ctx)
+    ctx.response.content_type = "application/json; profile=http://nodeinfo.diaspora.software/ns/schema/2.0"
+    {
+      openRegistrations: true,
+      protocols:         ["activitypub"],
+      services:          {
+        inbound:  [] of String,
+        outbound: [] of String,
+      },
+      software: {
+        name:    "pub-relay",
+        version: "#{PubRelay::VERSION}",
+      },
+      usage: {
+        localPosts: 0,
+        users:      {
+          total: 1,
+        },
+      },
+      version: "2.0",
+      metadata: {
+        peers: @subscription_manager.peers
+      }
     }.to_json(ctx.response)
   end
 
