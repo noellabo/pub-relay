@@ -44,10 +44,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
 
       begin
         response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
-      rescue ex : Socket::Error | Errno | IO::Timeout
-        # Errno is not expected unless it's connection refused
-        raise ex if ex.is_a?(Errno) && ex.errno != Errno::ECONNREFUSED
-
+      rescue ex : Socket::Error | IO::TimeoutError
         send_result(delivery, ex.inspect, start_time)
         return
       end
