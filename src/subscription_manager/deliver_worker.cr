@@ -44,7 +44,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
 
       begin
         response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
-      rescue ex : Socket::Error | IO::TimeoutError
+      rescue ex : Socket::Error | IO::TimeoutError | OpenSSL::SSL::Error
         send_result(delivery, ex.inspect, start_time)
         return
       end
