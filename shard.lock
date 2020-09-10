@@ -1,26 +1,26 @@
-version: 1.0
+version: 2.0
 shards:
   dotenv:
-    github: gdotdesign/cr-dotenv
-    version: 0.1.0
+    git: https://github.com/gdotdesign/cr-dotenv.git
+    version: 0.7.0
 
   earl:
-    github: ysbaddaden/earl
-    commit: 2a732dfcca8241eaca86dc24c41435d7032dd5f2
+    git: https://github.com/ysbaddaden/earl.git
+    version: 0.2.0+git.commit.2a732dfcca8241eaca86dc24c41435d7032dd5f2
 
   openssl_ext:
-    github: crystal-extras/openssl_ext
-    commit: 47778f8ce761be1d1ad0f7b671401929d7f75d45
+    git: https://github.com/stakach/openssl_ext.git
+    version: 1.2.2
 
   pool:
-    github: ysbaddaden/pool
-    version: 0.2.3
+    git: https://github.com/watzon/pool.git
+    version: 0.3.0
 
   redis:
-    github: stefanwille/crystal-redis
-    version: 2.0.0
+    git: https://github.com/noellabo/crystal-redis.git
+    version: 2.6.0+git.commit.1e9036538de4b8fd58faf795b9178e1d6e9fcd7d
 
   webmock:
-    github: manastech/webmock.cr
-    version: 0.12.1
+    git: https://github.com/manastech/webmock.cr.git
+    version: 0.13.0
 

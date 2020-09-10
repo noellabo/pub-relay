@@ -10,24 +10,24 @@ dependencies:
     github: ysbaddaden/earl
     branch: master
   openssl_ext:
-    github: crystal-extras/openssl_ext
-    branch: master
+    github: stakach/openssl_ext
+    version: '~> 1.2.2'
   redis:
-    github: stefanwille/crystal-redis
-    version: '~> 2.0.0'
+    github: noellabo/crystal-redis
+    branch: master
   dotenv:
     github: gdotdesign/cr-dotenv
-    version: '~> 0.1.0'
+    version: '~> 0.7.0'
 
 development_dependencies:
   webmock:
     github: manastech/webmock.cr
-    version: '>= 0.12.1'
+    version: '~> 0.13.0'
 
 targets:
   pub-relay:
     main: src/entrypoint.cr
 
-crystal: 0.32.1
+crystal: 0.35.1
 
 license: AGPL3
