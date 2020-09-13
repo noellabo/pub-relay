@@ -57,6 +57,14 @@ class PubRelay::WebServer
         serve_nodeinfo_wellknown(context)
       when {"GET", "/nodeinfo/2.0"}
         serve_nodeinfo_2_0(context)
+      when {"POST", "/actor/inbox"}
+        handle_inbox(context)
+      when {"GET", "/actor/outbox"}
+        serve_actor_outbox(context)
+      when {"GET", "/actor/followers"}
+        serve_actor_followers(context)
+      when {"GET", "/actor/following"}
+        serve_actor_following(context)
       when {"GET", "/actor"}
         serve_actor(context)
       when {"GET", "/stats"}
@@ -163,7 +171,13 @@ class PubRelay::WebServer
       id:                route_url("/actor"),
       type:              "Service",
       preferredUsername: "relay",
-      inbox:             route_url("/inbox"),
+      inbox:             route_url("/actor/inbox"),
+      outbox:            route_url("/actor/outbox"),
+      followers:         route_url("/actor/followers"),
+      following:         route_url("/actor/following"),
+      endpoints: {
+        sharedInbox:     route_url("/inbox"),
+      },
 
       publicKey: {
         id:           route_url("/actor#main-key"),
@@ -171,6 +185,75 @@ class PubRelay::WebServer
         publicKeyPem: @private_key.public_key.to_pem,
       },
     }.to_json(ctx.response)
+  end
+
+  private def serve_actor_followers(ctx)
+    if ctx.request.query_params.has_key?("page")
+      ctx.response.content_type = "application/json"
+      {
+        "@context"     => "https://www.w3.org/ns/activitystreams",
+        "id"           => route_url("/actor/followers"),
+        "type"         => "OrderedCollectionPage",
+        "totalItems"   => 0,
+        "partOf"       => route_url("/actor/followers"),
+        "orderedItems" => [] of String,
+      }.to_json(ctx.response)
+    else
+      ctx.response.content_type = "application/json"
+      {
+        "@context"     => "https://www.w3.org/ns/activitystreams",
+        "id"           => route_url("/actor/followers"),
+        "type"         => "OrderedCollection",
+        "totalItems"   => 0,
+        "first"        => route_url("/actor/followers?page=1"),
+      }.to_json(ctx.response)
+    end
+  end
+
+  private def serve_actor_following(ctx)
+    if ctx.request.query_params.has_key?("page")
+      ctx.response.content_type = "application/json"
+      {
+        "@context"     => "https://www.w3.org/ns/activitystreams",
+        "id"           => route_url("/actor/following"),
+        "type"         => "OrderedCollectionPage",
+        "totalItems"   => 0,
+        "partOf"       => route_url("/actor/following"),
+        "orderedItems" => [] of String,
+      }.to_json(ctx.response)
+    else
+      ctx.response.content_type = "application/json"
+      {
+        "@context"     => "https://www.w3.org/ns/activitystreams",
+        "id"           => route_url("/actor/following"),
+        "type"         => "OrderedCollection",
+        "totalItems"   => 0,
+        "first"        => route_url("/actor/following?page=1"),
+      }.to_json(ctx.response)
+    end
+  end
+
+  private def serve_actor_outbox(ctx)
+    if ctx.request.query_params.has_key?("page")
+      ctx.response.content_type = "application/json"
+      {
+        "@context"     => "https://www.w3.org/ns/activitystreams",
+        "id"           => route_url("/actor/outbox"),
+        "type"         => "OrderedCollectionPage",
+        "totalItems"   => 0,
+        "partOf"       => route_url("/actor/outbox"),
+        "orderedItems" => [] of String,
+      }.to_json(ctx.response)
+    else
+      ctx.response.content_type = "application/json"
+      {
+        "@context"     => "https://www.w3.org/ns/activitystreams",
+        "id"           => route_url("/actor/outbox"),
+        "type"         => "OrderedCollection",
+        "totalItems"   => 0,
+        "first"        => route_url("/actor/outbox?page=1"),
+      }.to_json(ctx.response)
+    end
   end
 
   private def serve_stats(ctx)
