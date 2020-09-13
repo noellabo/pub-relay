@@ -124,7 +124,7 @@ class PubRelay::SubscriptionManager
     accept_activity = {
       "@context": "https://www.w3.org/ns/activitystreams",
 
-      id:     route_url("/actor#accepts/follows/#{subscription.domain}"),
+      id:     route_url("/actor#accepts/follows/#{UUID.random}"),
       type:   "Accept",
       actor:  route_url("/actor"),
       object: {
