@@ -3,6 +3,9 @@ class PubRelay::Activity
 
   getter id : String
   getter object : String | Object
+  getter published : Time?
+
+  getter duplicate : Bool?
 
   @[JSON::Field(key: "type", converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter types : Array(String)
@@ -16,11 +19,18 @@ class PubRelay::Activity
   @[JSON::Field(converter: PubRelay::Activity::FuzzyStringArrayConverter)]
   getter cc = [] of String
 
-  def initialize(*, @id, @object, @types, @to = [] of String, @cc = [] of String)
+  def initialize(*, @id, @object, @published, @types, @to = [] of String, @cc = [] of String)
   end
 
-  def initialize(*, @id, @object, type, @to = [] of String, @cc = [] of String)
+  def initialize(*, @id, @object, @published, type, @to = [] of String, @cc = [] of String)
     @types = [type]
+  end
+
+  def check_duplicate?(redis)
+    d = @duplicate
+    return d unless d.nil?
+
+    @duplicate = redis.zadd("activity_id", (@published || Time.utc).to_unix_f, @id, nx: true) == 0
   end
 
   def follow?
@@ -70,6 +80,10 @@ class PubRelay::Activity
 
   def valid_for_relay?
     types.any? { |type| RELAY_TYPES.includes? type }
+  end
+
+  def older_published?
+    published.nil? || published.not_nil! < Time.utc - 30.minutes
   end
 
   class Object

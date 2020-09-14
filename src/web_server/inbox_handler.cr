@@ -31,6 +31,10 @@ class PubRelay::WebServer::InboxHandler
       handle_unfollow(actor_from_signature, activity)
     when .accept?
       handle_accept(actor_from_signature, activity)
+    when .older_published?
+      error(200, "Skip old activity:", "\n#{activity.id}")
+    when .check_duplicate?(@redis)
+      error(200, "Skip the activity id that the server already knows:", "\n#{activity.id}")
     when .valid_for_rebroadcast?
       handle_forward(actor_from_signature, request_body)
     when .valid_for_relay?

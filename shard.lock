@@ -18,7 +18,7 @@ shards:
 
   redis:
     git: https://github.com/noellabo/crystal-redis.git
-    version: 2.6.0+git.commit.1e9036538de4b8fd58faf795b9178e1d6e9fcd7d
+    version: 2.6.0+git.commit.564ec37a6ffdf29fefe8a7c26696765203138df3
 
   webmock:
     git: https://github.com/manastech/webmock.cr.git
