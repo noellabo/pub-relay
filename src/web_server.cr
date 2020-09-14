@@ -169,7 +169,7 @@ class PubRelay::WebServer
       "@context": {"https://www.w3.org/ns/activitystreams", "https://w3id.org/security/v1"},
 
       id:                route_url("/actor"),
-      type:              "Service",
+      type:              "Group",
       preferredUsername: "relay",
       inbox:             route_url("/actor/inbox"),
       outbox:            route_url("/actor/outbox"),
