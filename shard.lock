@@ -1,5 +1,9 @@
 version: 2.0
 shards:
+  circuit_breaker:
+    git: https://github.com/tpei/circuit_breaker.git
+    version: 0.0.5+git.commit.ff3e5e6fca31969ff2f0e3661cef5b2118478c6d
+
   dotenv:
     git: https://github.com/gdotdesign/cr-dotenv.git
     version: 0.7.0

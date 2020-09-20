@@ -18,6 +18,9 @@ dependencies:
   dotenv:
     github: gdotdesign/cr-dotenv
     version: '~> 0.7.0'
+  circuit_breaker:
+    github: tpei/circuit_breaker
+    branch: master
 
 development_dependencies:
   webmock:
