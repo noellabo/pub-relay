@@ -57,8 +57,6 @@ class PubRelay::WebServer
         serve_nodeinfo_wellknown(context)
       when {"GET", "/nodeinfo/2.0"}
         serve_nodeinfo_2_0(context)
-      when {"POST", "/actor/inbox"}
-        handle_inbox(context)
       when {"GET", "/actor/outbox"}
         serve_actor_outbox(context)
       when {"GET", "/actor/followers"}
@@ -171,13 +169,10 @@ class PubRelay::WebServer
       id:                route_url("/actor"),
       type:              "Group",
       preferredUsername: "relay",
-      inbox:             route_url("/actor/inbox"),
+      inbox:             route_url("/inbox"),
       outbox:            route_url("/actor/outbox"),
       followers:         route_url("/actor/followers"),
       following:         route_url("/actor/following"),
-      endpoints: {
-        sharedInbox:     route_url("/inbox"),
-      },
 
       publicKey: {
         id:           route_url("/actor#main-key"),
