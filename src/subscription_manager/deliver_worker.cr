@@ -3,17 +3,19 @@ require "circuit_breaker"
 class PubRelay::SubscriptionManager::DeliverWorker
   record Delivery,
     message : String,
-    domain : String,
+    domains : Array(String),
     counter : Int32,
     accept : Bool
 
   include Earl::Artist(Delivery)
 
   getter domain : String
+  getter server_type : ServerType
 
   def initialize(
     @domain : String,
     @inbox_url : URI,
+    @server_type : ServerType,
     @relay_domain : String,
     @private_key : OpenSSL::PKey::RSA,
     @stats : Stats,
@@ -29,14 +31,14 @@ class PubRelay::SubscriptionManager::DeliverWorker
 
   getter(client : HTTP::Client) do
     HTTP::Client.new(@inbox_url).tap do |client|
-      client.dns_timeout = 5.seconds
-      client.connect_timeout = 5.seconds
-      client.read_timeout = 10.seconds
+      client.dns_timeout = 2.seconds
+      client.connect_timeout = 2.seconds
+      client.read_timeout = 4.seconds
     end
   end
 
   def call(delivery : Delivery)
-    if delivery.domain == @domain
+    if delivery.domains.includes? @domain
       @stats.send Stats::DeliveryPayload.new(@domain, "SELF DOMAIN", delivery.counter)
       return
     end
@@ -53,7 +55,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
         @breaker.run do
           response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
         end
-      rescue ex : CircuitOpenException | Socket::Error | IO::TimeoutError | OpenSSL::SSL::Error
+      rescue ex : CircuitOpenException | MoreErrorsThanExecutionsException | Socket::Error | IO::TimeoutError | OpenSSL::SSL::Error
         send_result(delivery, ex.inspect, start_time)
         return
       end

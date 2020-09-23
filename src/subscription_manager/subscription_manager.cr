@@ -3,7 +3,8 @@ class PubRelay::SubscriptionManager
     domain : String,
     inbox_url : URI,
     follow_id : String,
-    follow_actor_id : String
+    follow_actor_id : String,
+    server_type : ServerType
 
   record AcceptSent,
     domain : String
@@ -15,7 +16,8 @@ class PubRelay::SubscriptionManager
     domain : String,
     inbox_url : URI,
     following_id : String,
-    following_actor_id : String
+    following_actor_id : String,
+    server_type : ServerType
 
   record AcceptReceive,
     domain : String
@@ -51,6 +53,12 @@ class PubRelay::SubscriptionManager
     end
   end
 
+  enum ServerType
+    Mastodon
+    Pleroma
+    Unknown
+  end
+
   def initialize(
     @relay_domain : String,
     @private_key : OpenSSL::PKey::RSA,
@@ -74,6 +82,7 @@ class PubRelay::SubscriptionManager
       inbox_url = URI.parse inbox_url
       state = get_state(domain)
       following_state = get_following_state(domain)
+      server_type = ServerType.parse?(@redis.hget(key, "server_type").to_s) || ServerType::Unknown
 
       if state.failed?
         transition_state(domain, :subscribed)
@@ -81,7 +90,7 @@ class PubRelay::SubscriptionManager
       end
 
       deliver_worker = DeliverWorker.new(
-        domain, inbox_url, @relay_domain, @private_key, @stats, self
+        domain, inbox_url, server_type, @relay_domain, @private_key, @stats, self
       )
 
       @workers << deliver_worker
@@ -109,7 +118,7 @@ class PubRelay::SubscriptionManager
     log.info "Received subscription for #{subscription.domain}"
 
     deliver_worker = DeliverWorker.new(
-      subscription.domain, subscription.inbox_url, @relay_domain, @private_key, @stats, self
+      subscription.domain, subscription.inbox_url, subscription.server_type, @relay_domain, @private_key, @stats, self
     )
 
     @redis.hmset(key_for(subscription.domain), {
@@ -117,6 +126,7 @@ class PubRelay::SubscriptionManager
       follow_id:       subscription.follow_id,
       follow_actor_id: subscription.follow_actor_id,
       state:           State::Pending.to_s,
+      server_type:     subscription.server_type.to_s,
     })
 
     supervise deliver_worker
@@ -137,7 +147,7 @@ class PubRelay::SubscriptionManager
 
     counter = new_counter
     delivery = DeliverWorker::Delivery.new(
-      accept_activity.to_json, @relay_domain, counter, accept: true
+      accept_activity.to_json, [@relay_domain], counter, accept: true
     )
     deliver_worker.send delivery
   end
@@ -146,7 +156,7 @@ class PubRelay::SubscriptionManager
     log.info "Send follow to #{following.domain}"
 
     deliver_worker = DeliverWorker.new(
-      following.domain, following.inbox_url, @relay_domain, @private_key, @stats, self
+      following.domain, following.inbox_url, following.server_type, @relay_domain, @private_key, @stats, self
     )
 
     @redis.hmset(key_for(following.domain), {
@@ -154,6 +164,7 @@ class PubRelay::SubscriptionManager
       following_id:       following.following_id,
       following_actor_id: following.following_actor_id,
       following_state:    State::Pending.to_s,
+      server_type:        following.server_type.to_s,
     })
 
     supervise deliver_worker
@@ -169,7 +180,7 @@ class PubRelay::SubscriptionManager
 
     counter = new_counter
     delivery = DeliverWorker::Delivery.new(
-      follow_activity.to_json, @relay_domain, counter, accept: false
+      follow_activity.to_json, [@relay_domain], counter, accept: false
     )
     deliver_worker.send delivery
   end
@@ -221,12 +232,12 @@ class PubRelay::SubscriptionManager
       type:      "Announce",
       actor:     route_url("/actor"),
       object:    announce.object,
-      to:        [Activity::PUBLIC_COLLECTION],
+      to:        [route_url("/actor/followers")],
       published: Time.utc,
     }
 
     counter = new_counter
-    delivery = DeliverWorker::Delivery.new(announce_activity.to_json, announce.source_domain, counter, accept: false)
+    delivery = DeliverWorker::Delivery.new(announce_activity.to_json, [announce.source_domain, URI.parse(announce.object).host.to_s], counter, accept: false)
 
     @subscribed_workers.each do |worker|
       # TODO: checking then sending is a race condition with threads
@@ -236,7 +247,7 @@ class PubRelay::SubscriptionManager
 
   def call(deliver : Deliver)
     counter = new_counter
-    delivery = DeliverWorker::Delivery.new(deliver.message, deliver.source_domain, counter, accept: false)
+    delivery = DeliverWorker::Delivery.new(deliver.message, [deliver.source_domain], counter, accept: false)
 
     @subscribed_workers.each do |worker|
       # TODO: checking then sending is a race condition with threads

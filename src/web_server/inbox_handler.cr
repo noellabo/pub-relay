@@ -4,6 +4,11 @@ require "uuid"
 require "uuid/json"
 
 class PubRelay::WebServer::InboxHandler
+  include Earl::Agent
+  include Earl::Logger
+
+  def call() end
+
   def initialize(
     @context : HTTP::Server::Context,
     @domain : String,
@@ -21,7 +26,7 @@ class PubRelay::WebServer::InboxHandler
     begin
       activity = Activity.from_json(request_body)
     rescue ex : JSON::Error
-      error(400, "Invalid activity JSON:", "\n#{ex.inspect_with_backtrace}")
+      error(400, "Invalid activity JSON", "\n#{ex.inspect_with_backtrace}")
     end
 
     case activity
@@ -32,9 +37,13 @@ class PubRelay::WebServer::InboxHandler
     when .accept?
       handle_accept(actor_from_signature, activity)
     when .older_published?
-      error(200, "Skip old activity:", "\n#{activity.id}")
+      error(200, "Skip old activity", "\n#{activity.id}")
     when .check_duplicate?(@redis)
-      error(200, "Skip the activity id that the server already knows:", "\n#{activity.id}")
+      log.info "request_header = #{request.headers}"
+      log.info "request_body = #{request_body}"
+      log.info "activity = #{activity.to_json}"
+      log.info "actor = #{actor_from_signature.to_json}"
+      error(200, "Skip known activity", "\n#{activity.id}")
     when .valid_for_rebroadcast?
       handle_forward(actor_from_signature, request_body)
     when .valid_for_relay?
@@ -49,13 +58,14 @@ class PubRelay::WebServer::InboxHandler
     inbox_url = URI.parse(actor.inbox_url) rescue nil
     error(400, "Inbox URL was not a valid URL") unless inbox_url
 
-    if actor.pleroma_relay?
+    if actor.server_type.pleroma?
       @subscription_manager.send(
         SubscriptionManager::FollowSent.new(
           domain: actor.domain,
           inbox_url: inbox_url,
           following_id: route_url("/#{UUID.random}"),
-          following_actor_id: actor.id
+          following_actor_id: actor.id,
+          server_type: actor.server_type
         )
       )
     elsif activity.object_id != Activity::PUBLIC_COLLECTION
@@ -67,7 +77,8 @@ class PubRelay::WebServer::InboxHandler
         domain: actor.domain,
         inbox_url: inbox_url,
         follow_id: activity.id,
-        follow_actor_id: actor.id
+        follow_actor_id: actor.id,
+        server_type: actor.server_type
       )
     )
   end

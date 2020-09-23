@@ -33,6 +33,14 @@ class PubRelay::Activity
     @duplicate = redis.zadd("activity_id", (@published || Time.utc).to_unix_f, @id, nx: true) == 0
   end
 
+  def create?
+    types.includes? "Create"
+  end
+
+  def announce?
+    types.includes? "Announce"
+  end
+
   def follow?
     types.includes? "Follow"
   end
@@ -83,7 +91,7 @@ class PubRelay::Activity
   end
 
   def older_published?
-    published.nil? || published.not_nil! < Time.utc - 30.minutes
+    (pub = published) && pub < Time.utc - 30.minutes
   end
 
   class Object

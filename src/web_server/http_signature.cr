@@ -171,8 +171,12 @@ struct PubRelay::WebServer::HTTPSignature
       preferredUsername || File.basename(URI.parse(id).path.not_nil!.strip.downcase)
     end
 
-    def pleroma_relay?
-      name == "Pleroma" && type == "Application" && username == "relay"
+    def server_type : PubRelay::SubscriptionManager::ServerType
+      if name == "Pleroma" && type == "Application" && username == "relay"
+        PubRelay::SubscriptionManager::ServerType::Pleroma
+      else
+        PubRelay::SubscriptionManager::ServerType::Mastodon
+      end
     end
   end
 
