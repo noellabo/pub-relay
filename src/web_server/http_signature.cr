@@ -172,7 +172,7 @@ struct PubRelay::WebServer::HTTPSignature
     end
 
     def server_type : PubRelay::SubscriptionManager::ServerType
-      if name == "Pleroma" && type == "Application" && username == "relay"
+      if username == "relay"
         PubRelay::SubscriptionManager::ServerType::Pleroma
       else
         PubRelay::SubscriptionManager::ServerType::Mastodon
