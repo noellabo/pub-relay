@@ -92,7 +92,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
       "Date"         => HTTP.format_time(Time.utc),
       "Digest"       => "SHA-256=#{body_hash}",
       "Content-Type" => "application/ld+json;profile=\"https://www.w3.org/ns/activitystreams\"",
-      "User-Agent"   => "pub-relay/#{PubRelay::VERSION} (#{route_url("")})",
+      "User-Agent"   => "pub-relay/#{PubRelay::VERSION} (https://#{@relay_domain})",
     }
 
     signed_headers = "(request-target) host date digest"
