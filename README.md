@@ -29,7 +29,7 @@ Operations:
         - `MIX_ENV=prod mix pleroma.relay unfollow https://your.relay.hostname/actor`
         - `./bin/pleroma_ctl relay unfollow https://your.relay.hostname/actor`
 - Send anything else to the inbox to broadcast it
-    - Supported types: `Create`, `Update`, `Delete`, `Announce`, `Undo`, `Move`
+    - Supported types: `Create`, `Update`, `Delete`, `Announce`, `Undo`, `Move`, `Like`, `Add`, `Remove`
 
 Requirements:
 
