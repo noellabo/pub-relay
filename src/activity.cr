@@ -68,7 +68,7 @@ class PubRelay::Activity
     to.includes?(PUBLIC_COLLECTION) || cc.includes?(PUBLIC_COLLECTION)
   end
 
-  FORWARD_TYPES = {"Update", "Delete", "Undo", "Move"}
+  FORWARD_TYPES = {"Update", "Delete", "Undo", "Move", "Like", "Add", "Remove"}
   RELAY_TYPES   = {"Create", "Announce"}
 
   def valid_for_rebroadcast?
