@@ -11,26 +11,26 @@ dependencies:
     branch: master
   openssl_ext:
     github: stakach/openssl_ext
-    version: '~> 1.2.2'
+    version: '~> 2.1.5'
   redis:
-    github: noellabo/crystal-redis
-    branch: master
+    github: stefanwille/crystal-redis
+    version: '~> 2.8.0'
   dotenv:
     github: gdotdesign/cr-dotenv
-    version: '~> 0.7.0'
+    version: '~> 1.0.0'
   circuit_breaker:
-    github: tpei/circuit_breaker
+    github: noellabo/circuit_breaker
     branch: master
 
 development_dependencies:
   webmock:
     github: manastech/webmock.cr
-    version: '~> 0.13.0'
+    version: '~> 0.14.0'
 
 targets:
   pub-relay:
     main: src/entrypoint.cr
 
-crystal: 0.35.1
+crystal: ">= 1.1.1, < 2.0"
 
 license: AGPL3
