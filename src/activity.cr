@@ -30,7 +30,7 @@ class PubRelay::Activity
     d = @duplicate
     return d unless d.nil?
 
-    @duplicate = redis.zadd("activity_id", (@published || Time.utc).to_unix_f, @id, nx: true) == 0
+    @duplicate = redis.zadd("activity_id", (@published || Time.utc).to_unix_f.to_s, @id, nx: true) == 0
   end
 
   def follow?

@@ -45,13 +45,13 @@ class PubRelay::SubscriptionManager::DeliverWorker
 
     start_time = Time.monotonic
     begin
-      response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
+      response = client.post(@inbox_url.request_target, headers: headers, body: delivery.message)
     rescue
       @client = nil
 
       begin
         @breaker.run do
-          response = client.post(@inbox_url.full_path, headers: headers, body: delivery.message)
+          response = client.post(@inbox_url.request_target, headers: headers, body: delivery.message)
         end
       rescue ex : CircuitOpenException | Socket::Error | IO::TimeoutError | OpenSSL::SSL::Error
         send_result(delivery, ex.inspect, start_time)
@@ -85,7 +85,7 @@ class PubRelay::SubscriptionManager::DeliverWorker
   def request_headers(delivery)
     body_hash = OpenSSL::Digest.new("sha256")
     body_hash.update(delivery.message)
-    body_hash = Base64.strict_encode(body_hash.digest)
+    body_hash = Base64.strict_encode(body_hash.final)
 
     headers = HTTP::Headers{
       "Host"         => @inbox_url.host.not_nil!,

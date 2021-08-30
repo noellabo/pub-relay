@@ -121,7 +121,7 @@ struct PubRelay::WebServer::HTTPSignature
       when "digest"
         body_digest = OpenSSL::Digest.new("SHA256")
         body_digest.update(body)
-        "digest: SHA-256=#{Base64.strict_encode(body_digest.digest)}"
+        "digest: SHA-256=#{Base64.strict_encode(body_digest.final)}"
       else
         request_header = request.headers[header_name]?
         unless request_header
