@@ -5,7 +5,7 @@ require "redis"
 require "earl"
 
 class PubRelay < Earl::Supervisor
-  VERSION = "0.2.0"
+  VERSION = "0.2.1"
 
   getter stats : Stats
   getter subscription_manager : SubscriptionManager
@@ -16,13 +16,14 @@ class PubRelay < Earl::Supervisor
     private_key : OpenSSL::PKey::RSA,
     redis : Redis::PooledClient,
     bindhost : String,
-    port : Int32
+    port : Int32,
+    reuse_port : Bool
   )
     super()
 
     @stats = Stats.new
     @subscription_manager = SubscriptionManager.new(domain, private_key, redis, stats)
-    @web_server = WebServer.new(domain, private_key, subscription_manager, bindhost, port, stats, redis)
+    @web_server = WebServer.new(domain, private_key, subscription_manager, bindhost, port, reuse_port, stats, redis)
 
     monitor(@stats)
     monitor(@subscription_manager)

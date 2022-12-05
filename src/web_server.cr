@@ -22,6 +22,7 @@ class PubRelay::WebServer
     @subscription_manager : SubscriptionManager,
     @bindhost : String,
     @port : Int32,
+    @reuse_port : Bool,
     @stats : Stats,
     @redis : Redis::PooledClient
   )
@@ -32,7 +33,11 @@ class PubRelay::WebServer
   def call
     @server = server = HTTP::Server.new(self)
 
-    bind_ip = server.bind_tcp(@bindhost, @port)
+    bind_ip = server.bind_tcp(
+      host: @bindhost,
+      port: @port,
+      reuse_port: @reuse_port
+    )
     log.info("Listening on #{bind_ip}")
 
     server.listen

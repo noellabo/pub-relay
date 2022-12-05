@@ -1,5 +1,5 @@
 name: pub-relay
-version: 0.2.0
+version: 0.2.1
 
 authors:
   - RX14 <chris@rx14.co.uk>
@@ -8,13 +8,13 @@ authors:
 dependencies:
   earl:
     github: ysbaddaden/earl
-    branch: master
+    branch: main
   openssl_ext:
-    github: stakach/openssl_ext
-    version: '~> 2.1.5'
+    github: spider-gazelle/openssl_ext
+    version: '~> 2.2.0'
   redis:
     github: stefanwille/crystal-redis
-    version: '~> 2.8.0'
+    version: '~> 2.8.3'
   dotenv:
     github: gdotdesign/cr-dotenv
     version: '~> 1.0.0'

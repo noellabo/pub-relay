@@ -9,6 +9,7 @@ describe PubRelay::SubscriptionManager::DeliverWorker do
       activity = PubRelay::Activity.new(
         id: "https://subscriber1.com/notes/1/create",
         type: "Create",
+        published: Time.utc,
         object: "https://subscriber.com/notes/1",
         to: [PubRelay::Activity::PUBLIC_COLLECTION]
       )
@@ -23,7 +24,7 @@ describe PubRelay::SubscriptionManager::DeliverWorker do
           request.body.not_nil!.rewind
           response = HTTP::Server::Response.new(IO::Memory.new)
           context = HTTP::Server::Context.new(request, response)
-          PubRelay::WebServer::HTTPSignature.new(context).verify_signature
+          PubRelay::WebServer::HTTPSignature.new(context, SPEC_REDIS).verify_signature
 
           channel.send nil
 

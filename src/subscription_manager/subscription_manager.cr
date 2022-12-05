@@ -55,10 +55,11 @@ class PubRelay::SubscriptionManager
     @relay_domain : String,
     @private_key : OpenSSL::PKey::RSA,
     @redis : Redis::PooledClient,
-    @stats : Stats
+    @stats : Stats,
   )
     @workers = Set(DeliverWorker).new
     @subscribed_workers = Set(DeliverWorker).new
+    @deny_domains = Array(String).new
 
     load_subscriptions
   end
@@ -80,8 +81,10 @@ class PubRelay::SubscriptionManager
         state = get_state(domain)
       end
 
+      @deny_domains = get_deny_domains(domain)
+
       deliver_worker = DeliverWorker.new(
-        domain, inbox_url, @relay_domain, @private_key, @stats, self
+        domain, inbox_url, @relay_domain, @private_key, @stats, @deny_domains, self
       )
 
       @workers << deliver_worker
@@ -109,7 +112,7 @@ class PubRelay::SubscriptionManager
     log.info "Received subscription for #{subscription.domain}"
 
     deliver_worker = DeliverWorker.new(
-      subscription.domain, subscription.inbox_url, @relay_domain, @private_key, @stats, self
+      subscription.domain, subscription.inbox_url, @relay_domain, @private_key, @stats, @deny_domains, self
     )
 
     @redis.hmset(key_for(subscription.domain), {
@@ -146,7 +149,7 @@ class PubRelay::SubscriptionManager
     log.info "Send follow to #{following.domain}"
 
     deliver_worker = DeliverWorker.new(
-      following.domain, following.inbox_url, @relay_domain, @private_key, @stats, self
+      following.domain, following.inbox_url, @relay_domain, @private_key, @stats, @deny_domains, self
     )
 
     @redis.hmset(key_for(following.domain), {
@@ -285,6 +288,11 @@ class PubRelay::SubscriptionManager
   private def get_following_state(domain) : State
     state = @redis.hget(key_for(domain), "following_state")
     state.nil? ? State::Undefined : State.parse(state)
+  end
+
+  private def get_deny_domains(domain) : Array(String)
+    domains = @redis.hget(key_for(domain), "deny_domains")
+    domains.nil? ? [] of String : domains.split(',')
   end
 
   private def key_for(domain)

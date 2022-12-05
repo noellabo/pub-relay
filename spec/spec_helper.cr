@@ -48,9 +48,11 @@ def request(method, resource, headers = nil, body = nil)
   PubRelay::WebServer.new(
     domain: "example.com",
     private_key: SPEC_PKEY,
+    redis: SPEC_REDIS,
     subscription_manager: subscription_manager,
     bindhost: "localhost",
     port: 0,
+    reuse_port: true,
     stats: stats
   ).call(context)
 
@@ -118,7 +120,7 @@ private class IntegrationTest
   def signed_inbox_request(*, body : String, from source_domain : String, headers = HTTP::Headers.new)
     body_hash = OpenSSL::Digest.new("sha256")
     body_hash.update(body)
-    body_hash = Base64.strict_encode(body_hash.digest)
+    body_hash = Base64.strict_encode(body_hash.final)
 
     headers["Host"] = "relay.com"
     headers["Date"] = HTTP.format_time(Time.utc)
@@ -149,6 +151,7 @@ private class IntegrationTest
     activity = PubRelay::Activity.new(
       id: "https://#{domain}/follows/1",
       types: ["Follow"],
+      published: Time.utc,
       object: PubRelay::Activity::PUBLIC_COLLECTION
     )
 

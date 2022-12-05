@@ -17,9 +17,10 @@ class PubRelay::SubscriptionManager::DeliverWorker
     @relay_domain : String,
     @private_key : OpenSSL::PKey::RSA,
     @stats : Stats,
+    @deny_domains : Array(String),
     @subscription_manager : SubscriptionManager
   )
-    @mailbox = Channel(Delivery).new(100)
+    @mailbox = Channel(Delivery).new(500)
     @breaker = CircuitBreaker.new(
       threshold: 5,
       timewindow: 60,
@@ -41,22 +42,24 @@ class PubRelay::SubscriptionManager::DeliverWorker
       return
     end
 
+    return if @deny_domains.includes?(delivery.domain)
+
     headers = request_headers(delivery)
 
     start_time = Time.monotonic
     begin
       response = client.post(@inbox_url.request_target, headers: headers, body: delivery.message)
-    rescue
-      @client = nil
+    rescue ex : CircuitOpenException | Socket::Error | IO::TimeoutError | OpenSSL::SSL::Error
+      # @client = nil
 
-      begin
-        @breaker.run do
-          response = client.post(@inbox_url.request_target, headers: headers, body: delivery.message)
-        end
-      rescue ex : CircuitOpenException | Socket::Error | IO::TimeoutError | OpenSSL::SSL::Error
-        send_result(delivery, ex.inspect, start_time)
-        return
-      end
+      # begin
+      #   @breaker.run do
+      #     response = client.post(@inbox_url.request_target, headers: headers, body: delivery.message)
+      #   end
+      # rescue ex : CircuitOpenException | Socket::Error | IO::TimeoutError | OpenSSL::SSL::Error
+      send_result(delivery, ex.inspect, start_time)
+      return
+      # end
     end
 
     send_result(delivery, response.status_code, start_time)

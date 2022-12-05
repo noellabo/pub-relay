@@ -1,0 +1,17 @@
+[Unit]
+Description=pub-relay
+After=network.target
+
+[Service]
+Type=simple
+User=pub-relay
+WorkingDirectory=/home/pub-relay/pub-relay
+LimitNOFILE=65536
+Environment="CRYSTAL_WORKERS=2"
+ExecStart=/home/pub-relay/pub-relay/bin/pub-relay
+ExecReload=/bin/kill -SIGUSR1 $MAINPID
+TimeoutSec=15
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

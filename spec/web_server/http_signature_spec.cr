@@ -134,7 +134,7 @@ describe PubRelay::WebServer::HTTPSignature do
       signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
       status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-      status_code.should eq(202)
+      status_code.should eq(200)
     end
   end
 
@@ -149,7 +149,7 @@ describe PubRelay::WebServer::HTTPSignature do
       signed_request = HTTP::Request.from_io(file).as(HTTP::Request)
       status_code, body = post_inbox(signed_request.headers, signed_request.body)
 
-      status_code.should eq(202)
+      status_code.should eq(200)
     end
   end
 
